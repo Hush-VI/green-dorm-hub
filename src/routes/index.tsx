@@ -47,7 +47,7 @@ function Login() {
 
       <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-4 py-10 lg:flex-row lg:gap-12">
         <div className="hidden lg:flex flex-1 flex-col gap-6 text-white animate-fade-in">
-          <img src={logo} alt="SME Hostels logo" className="h-24 w-auto squircle bg-white p-3 shadow-glass" />
+          <img src={logo} alt="SME Hostels logo" className="h-20 w-auto max-w-[220px] object-contain squircle bg-white p-3 shadow-glass self-start" />
           <h1 className="text-5xl font-bold leading-tight tracking-tight drop-shadow">
             A home away from home.
           </h1>
