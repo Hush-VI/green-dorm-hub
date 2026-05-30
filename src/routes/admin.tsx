@@ -36,9 +36,9 @@ function Admin() {
 
   return (
     <div className="flex min-h-screen bg-gradient-soft">
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-white/80 p-4 backdrop-blur-xl lg:flex">
-        <Link to="/" className="mb-6 flex items-center gap-3 px-2">
-          <img src={logo} alt="SME Hostels" className="h-10 w-auto" />
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-white/80 p-4 backdrop-blur-xl lg:flex xl:w-64">
+        <Link to="/" className="mb-6 flex items-center gap-3 px-2 py-1">
+          <img src={logo} alt="SME Hostels" className="h-10 w-auto max-w-[160px] object-contain" />
         </Link>
         <nav className="flex-1 space-y-1">
           {nav.map((n) => (
@@ -53,16 +53,16 @@ function Admin() {
         </Link>
       </aside>
 
-      <main className="flex-1 px-4 py-6 lg:px-10 lg:py-10">
+      <main className="min-w-0 flex-1 px-4 py-6 lg:px-8 lg:py-8 xl:px-10">
         <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Admin · {section}</div>
-            <h1 className="text-3xl font-bold capitalize">{sectionTitle(section)}</h1>
+            <h1 className="text-2xl font-bold capitalize lg:text-3xl">{sectionTitle(section)}</h1>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input placeholder="Search students, rooms…" className="w-72 rounded-2xl border border-border bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+              <input placeholder="Search students, rooms…" className="w-56 rounded-2xl border border-border bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-primary/30 xl:w-72" />
             </div>
             <button className="inline-flex items-center gap-2 rounded-2xl bg-gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft">
               <Plus className="h-4 w-4" /> New
@@ -73,13 +73,13 @@ function Admin() {
         <div className="lg:hidden mb-6 flex gap-2 overflow-x-auto pb-2">
           {nav.map((n) => (
             <button key={n.k} onClick={() => setSection(n.k)}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${section === n.k ? "bg-gradient-primary text-primary-foreground" : "bg-white text-muted-foreground"}`}>
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${section === n.k ? "bg-gradient-primary text-primary-foreground shadow-soft" : "bg-white text-muted-foreground"}`}>
               <n.icon className="h-3 w-3" />{n.label}
             </button>
           ))}
         </div>
 
-        <div className="animate-fade-in">
+        <div key={section} className="animate-fade-in">
           {section === "dashboard" && <Dashboard />}
           {section === "students" && <StudentsSection />}
           {section === "rooms" && <RoomsSection />}
