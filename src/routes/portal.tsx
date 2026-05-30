@@ -29,43 +29,64 @@ const payments = [
   { label: "Utilities (Nov)", amount: "GHS 135", status: "Due", date: "Nov 30" },
 ];
 
+const TABS = [
+  { k: "home", icon: Home, label: "Home" },
+  { k: "payments", icon: CreditCard, label: "Fees" },
+  { k: "maintenance", icon: Wrench, label: "Repair" },
+  { k: "notices", icon: Bell, label: "News" },
+] as const;
+
 function Portal() {
   const [tab, setTab] = useState<"home" | "payments" | "maintenance" | "notices">("home");
+  const activeIndex = TABS.findIndex((t) => t.k === tab);
 
   return (
-    <div className="min-h-screen bg-gradient-soft pb-24">
-      <header className="sticky top-0 z-20 border-b border-border bg-white/80 backdrop-blur-xl">
+    <div className="min-h-screen bg-gradient-soft pb-28">
+      <header className="sticky top-0 z-20 border-b border-white/40 bg-white/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <img src={logo} alt="SME" className="h-9 w-auto" />
           </div>
           <div className="flex items-center gap-2">
-            <button className="grid h-9 w-9 place-items-center rounded-full bg-secondary"><Bell className="h-4 w-4" /></button>
-            <Link to="/" className="grid h-9 w-9 place-items-center rounded-full bg-secondary"><LogOut className="h-4 w-4" /></Link>
+            <button className="grid h-9 w-9 place-items-center rounded-full bg-secondary transition active:scale-90"><Bell className="h-4 w-4" /></button>
+            <Link to="/" className="grid h-9 w-9 place-items-center rounded-full bg-secondary transition active:scale-90"><LogOut className="h-4 w-4" /></Link>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-md px-4 py-6 animate-fade-in">
+      <main key={tab} className="mx-auto max-w-md px-4 py-6 animate-fade-in">
         {tab === "home" && <HomeTab />}
         {tab === "payments" && <PaymentsTab />}
         {tab === "maintenance" && <MaintenanceTab />}
         {tab === "notices" && <NoticesTab />}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-4 z-30 mx-auto flex max-w-sm items-center justify-around rounded-full border border-border bg-white/90 px-2 py-2 shadow-glass backdrop-blur-xl">
-        {[
-          { k: "home", icon: Home, label: "Home" },
-          { k: "payments", icon: CreditCard, label: "Fees" },
-          { k: "maintenance", icon: Wrench, label: "Repair" },
-          { k: "notices", icon: Bell, label: "News" },
-        ].map((t) => (
-          <button key={t.k} onClick={() => setTab(t.k as typeof tab)}
-            className={`flex flex-col items-center gap-0.5 rounded-full px-4 py-1.5 text-xs transition ${tab === t.k ? "bg-gradient-primary text-primary-foreground shadow-soft" : "text-muted-foreground"}`}>
-            <t.icon className="h-4 w-4" />
-            <span>{t.label}</span>
-          </button>
-        ))}
+      <nav className="fixed inset-x-0 bottom-0 z-30 safe-bottom px-4 pointer-events-none">
+        <div className="pointer-events-auto mx-auto max-w-sm">
+          <div className="glass-strong relative flex items-center justify-around rounded-[28px] p-1.5">
+            <div
+              className="absolute top-1.5 bottom-1.5 left-1.5 rounded-[22px] bg-gradient-primary shadow-soft transition-all duration-500"
+              style={{
+                width: `calc((100% - 0.75rem) / ${TABS.length})`,
+                transform: `translateX(calc(${activeIndex} * 100%))`,
+                transitionTimingFunction: "cubic-bezier(.34,1.56,.64,1)",
+              }}
+            />
+            {TABS.map((t, i) => {
+              const active = i === activeIndex;
+              return (
+                <button
+                  key={t.k}
+                  onClick={() => setTab(t.k)}
+                  className={`relative z-10 flex flex-1 flex-col items-center gap-0.5 rounded-[22px] py-2 text-[11px] font-medium transition active:scale-90 ${active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  <t.icon className={`h-[18px] w-[18px] transition-transform duration-300 ${active ? "scale-110" : ""}`} />
+                  <span className={`transition-opacity ${active ? "opacity-100" : "opacity-80"}`}>{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </nav>
     </div>
   );

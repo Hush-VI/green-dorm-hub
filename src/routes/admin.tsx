@@ -36,9 +36,9 @@ function Admin() {
 
   return (
     <div className="flex min-h-screen bg-gradient-soft">
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-white/80 p-4 backdrop-blur-xl lg:flex">
-        <Link to="/" className="mb-6 flex items-center gap-3 px-2">
-          <img src={logo} alt="SME Hostels" className="h-10 w-auto" />
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-white/80 p-4 backdrop-blur-xl lg:flex xl:w-64">
+        <Link to="/" className="mb-6 flex items-center gap-3 px-2 py-1">
+          <img src={logo} alt="SME Hostels" className="h-10 w-auto max-w-[160px] object-contain" />
         </Link>
         <nav className="flex-1 space-y-1">
           {nav.map((n) => (
@@ -53,16 +53,16 @@ function Admin() {
         </Link>
       </aside>
 
-      <main className="flex-1 px-4 py-6 lg:px-10 lg:py-10">
+      <main className="min-w-0 flex-1 px-4 py-6 lg:px-8 lg:py-8 xl:px-10">
         <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Admin · {section}</div>
-            <h1 className="text-3xl font-bold capitalize">{sectionTitle(section)}</h1>
+            <h1 className="text-2xl font-bold capitalize lg:text-3xl">{sectionTitle(section)}</h1>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input placeholder="Search students, rooms…" className="w-72 rounded-2xl border border-border bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+              <input placeholder="Search students, rooms…" className="w-56 rounded-2xl border border-border bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-primary/30 xl:w-72" />
             </div>
             <button className="inline-flex items-center gap-2 rounded-2xl bg-gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft">
               <Plus className="h-4 w-4" /> New
@@ -73,13 +73,13 @@ function Admin() {
         <div className="lg:hidden mb-6 flex gap-2 overflow-x-auto pb-2">
           {nav.map((n) => (
             <button key={n.k} onClick={() => setSection(n.k)}
-              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${section === n.k ? "bg-gradient-primary text-primary-foreground" : "bg-white text-muted-foreground"}`}>
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${section === n.k ? "bg-gradient-primary text-primary-foreground shadow-soft" : "bg-white text-muted-foreground"}`}>
               <n.icon className="h-3 w-3" />{n.label}
             </button>
           ))}
         </div>
 
-        <div className="animate-fade-in">
+        <div key={section} className="animate-fade-in">
           {section === "dashboard" && <Dashboard />}
           {section === "students" && <StudentsSection />}
           {section === "rooms" && <RoomsSection />}
@@ -109,7 +109,10 @@ const roomMix = [
   { name: "Double", value: 95 },
   { name: "Quad", value: 35 },
 ];
-const COLORS = ["oklch(0.68 0.17 145)", "oklch(0.78 0.15 145)", "oklch(0.55 0.18 160)"];
+const COLORS = ["#4CAF50", "#66BB6A", "#A5D6A7"];
+const CHART_PRIMARY = "#4CAF50";
+const CHART_GRID = "#E2EFE3";
+const CHART_AXIS = "#7A8A82";
 
 function Dashboard() {
   return (
@@ -142,19 +145,19 @@ function Dashboard() {
             <span className="inline-flex items-center gap-1 text-xs font-medium text-primary"><TrendingUp className="h-3 w-3" /> Live</span>
           </div>
           <div className="mt-4 h-64">
-            <ResponsiveContainer>
-              <AreaChart data={revenue} margin={{ left: -20 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={revenue} margin={{ left: -20, right: 8, top: 8 }}>
                 <defs>
                   <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="oklch(0.68 0.17 145)" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="oklch(0.68 0.17 145)" stopOpacity={0} />
+                    <stop offset="0%" stopColor={CHART_PRIMARY} stopOpacity={0.5} />
+                    <stop offset="100%" stopColor={CHART_PRIMARY} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0.015 145)" />
-                <XAxis dataKey="m" stroke="oklch(0.5 0.02 150)" fontSize={12} />
-                <YAxis stroke="oklch(0.5 0.02 150)" fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+                <XAxis dataKey="m" stroke={CHART_AXIS} fontSize={12} />
+                <YAxis stroke={CHART_AXIS} fontSize={12} />
                 <Tooltip contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 8px 32px -8px rgba(0,0,0,.15)" }} />
-                <Area type="monotone" dataKey="v" stroke="oklch(0.68 0.17 145)" strokeWidth={2} fill="url(#g1)" />
+                <Area type="monotone" dataKey="v" stroke={CHART_PRIMARY} strokeWidth={2.5} fill="url(#g1)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -164,12 +167,13 @@ function Dashboard() {
           <h2 className="font-semibold">Room mix</h2>
           <p className="text-xs text-muted-foreground">By type</p>
           <div className="mt-4 h-64">
-            <ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={roomMix} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={4}>
+                <Pie data={roomMix} dataKey="value" nameKey="name" cx="50%" cy="45%" innerRadius={45} outerRadius={75} paddingAngle={4}>
                   {roomMix.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
-                <Legend />
+                <Tooltip contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 8px 32px -8px rgba(0,0,0,.15)" }} />
+                <Legend verticalAlign="bottom" iconType="circle" height={28} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -179,13 +183,13 @@ function Dashboard() {
       <div className="squircle bg-white p-5 shadow-soft">
         <h2 className="font-semibold">Occupancy by block</h2>
         <div className="mt-4 h-64">
-          <ResponsiveContainer>
-            <BarChart data={occByBlock}>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0.015 145)" />
-              <XAxis dataKey="name" stroke="oklch(0.5 0.02 150)" fontSize={12} />
-              <YAxis stroke="oklch(0.5 0.02 150)" fontSize={12} />
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={occByBlock} margin={{ left: -20, right: 8, top: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+              <XAxis dataKey="name" stroke={CHART_AXIS} fontSize={12} />
+              <YAxis stroke={CHART_AXIS} fontSize={12} />
               <Tooltip contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 8px 32px -8px rgba(0,0,0,.15)" }} />
-              <Bar dataKey="v" fill="oklch(0.68 0.17 145)" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="v" fill={CHART_PRIMARY} radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -204,8 +208,9 @@ const studentsList = [
 
 function StudentsSection() {
   return (
-    <div className="squircle bg-white p-2 shadow-soft">
-      <table className="w-full text-sm">
+    <div className="squircle overflow-hidden bg-white p-2 shadow-soft">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[520px] text-sm">
         <thead className="text-left text-xs uppercase text-muted-foreground">
           <tr><th className="p-3">Student</th><th className="p-3">Room</th><th className="p-3 hidden md:table-cell">Program</th><th className="p-3">Status</th><th className="p-3"></th></tr>
         </thead>
@@ -221,6 +226,7 @@ function StudentsSection() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -253,8 +259,9 @@ function PaymentsSection() {
     { who: "Akua Frimpong", what: "Late fee", amt: "GHS 50", status: "Overdue" },
   ];
   return (
-    <div className="squircle bg-white p-2 shadow-soft">
-      <table className="w-full text-sm">
+    <div className="squircle overflow-hidden bg-white p-2 shadow-soft">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[520px] text-sm">
         <thead className="text-left text-xs uppercase text-muted-foreground">
           <tr><th className="p-3">Student</th><th className="p-3">Item</th><th className="p-3">Amount</th><th className="p-3">Status</th></tr>
         </thead>
@@ -269,6 +276,7 @@ function PaymentsSection() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
