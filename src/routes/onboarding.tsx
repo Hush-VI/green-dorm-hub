@@ -44,6 +44,9 @@ function Onboarding() {
 
   function finish() {
     if (!accepted) return;
+    try {
+      localStorage.setItem("sme_student_profile", JSON.stringify({ ...form, password: undefined, acceptedAt: Date.now() }));
+    } catch {}
     navigate({ to: "/portal" });
   }
 
