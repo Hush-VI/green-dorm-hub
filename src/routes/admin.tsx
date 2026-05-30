@@ -258,8 +258,9 @@ function PaymentsSection() {
     { who: "Akua Frimpong", what: "Late fee", amt: "GHS 50", status: "Overdue" },
   ];
   return (
-    <div className="squircle bg-white p-2 shadow-soft">
-      <table className="w-full text-sm">
+    <div className="squircle overflow-hidden bg-white p-2 shadow-soft">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[520px] text-sm">
         <thead className="text-left text-xs uppercase text-muted-foreground">
           <tr><th className="p-3">Student</th><th className="p-3">Item</th><th className="p-3">Amount</th><th className="p-3">Status</th></tr>
         </thead>
