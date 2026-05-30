@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { Lock, Mail, ShieldCheck, GraduationCap, Phone } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Lock, Mail, ShieldCheck, GraduationCap, Phone, Sparkles, CheckCircle2, ArrowRight } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import building from "@/assets/building.jpg";
 
