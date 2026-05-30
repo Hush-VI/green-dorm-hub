@@ -145,19 +145,19 @@ function Dashboard() {
             <span className="inline-flex items-center gap-1 text-xs font-medium text-primary"><TrendingUp className="h-3 w-3" /> Live</span>
           </div>
           <div className="mt-4 h-64">
-            <ResponsiveContainer>
-              <AreaChart data={revenue} margin={{ left: -20 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={revenue} margin={{ left: -20, right: 8, top: 8 }}>
                 <defs>
                   <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="oklch(0.68 0.17 145)" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="oklch(0.68 0.17 145)" stopOpacity={0} />
+                    <stop offset="0%" stopColor={CHART_PRIMARY} stopOpacity={0.5} />
+                    <stop offset="100%" stopColor={CHART_PRIMARY} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0.015 145)" />
-                <XAxis dataKey="m" stroke="oklch(0.5 0.02 150)" fontSize={12} />
-                <YAxis stroke="oklch(0.5 0.02 150)" fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+                <XAxis dataKey="m" stroke={CHART_AXIS} fontSize={12} />
+                <YAxis stroke={CHART_AXIS} fontSize={12} />
                 <Tooltip contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 8px 32px -8px rgba(0,0,0,.15)" }} />
-                <Area type="monotone" dataKey="v" stroke="oklch(0.68 0.17 145)" strokeWidth={2} fill="url(#g1)" />
+                <Area type="monotone" dataKey="v" stroke={CHART_PRIMARY} strokeWidth={2.5} fill="url(#g1)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
