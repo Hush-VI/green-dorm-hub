@@ -109,7 +109,10 @@ const roomMix = [
   { name: "Double", value: 95 },
   { name: "Quad", value: 35 },
 ];
-const COLORS = ["oklch(0.68 0.17 145)", "oklch(0.78 0.15 145)", "oklch(0.55 0.18 160)"];
+const COLORS = ["#4CAF50", "#66BB6A", "#A5D6A7"];
+const CHART_PRIMARY = "#4CAF50";
+const CHART_GRID = "#E2EFE3";
+const CHART_AXIS = "#7A8A82";
 
 function Dashboard() {
   return (
