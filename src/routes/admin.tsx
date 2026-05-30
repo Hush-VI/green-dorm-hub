@@ -207,8 +207,9 @@ const studentsList = [
 
 function StudentsSection() {
   return (
-    <div className="squircle bg-white p-2 shadow-soft">
-      <table className="w-full text-sm">
+    <div className="squircle overflow-hidden bg-white p-2 shadow-soft">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[520px] text-sm">
         <thead className="text-left text-xs uppercase text-muted-foreground">
           <tr><th className="p-3">Student</th><th className="p-3">Room</th><th className="p-3 hidden md:table-cell">Program</th><th className="p-3">Status</th><th className="p-3"></th></tr>
         </thead>
