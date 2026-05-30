@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PortalRouteImport } from './routes/portal'
+import { Route as PaymentCallbackRouteImport } from './routes/payment-callback'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -18,6 +19,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
   path: '/portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentCallbackRoute = PaymentCallbackRouteImport.update({
+  id: '/payment-callback',
+  path: '/payment-callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/onboarding': typeof OnboardingRoute
+  '/payment-callback': typeof PaymentCallbackRoute
   '/portal': typeof PortalRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/onboarding': typeof OnboardingRoute
+  '/payment-callback': typeof PaymentCallbackRoute
   '/portal': typeof PortalRoute
 }
 export interface FileRoutesById {
@@ -61,14 +69,15 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/contact': typeof ContactRoute
   '/onboarding': typeof OnboardingRoute
+  '/payment-callback': typeof PaymentCallbackRoute
   '/portal': typeof PortalRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/contact' | '/onboarding' | '/portal'
+  fullPaths: '/' | '/admin' | '/contact' | '/onboarding' | '/payment-callback' | '/portal'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/contact' | '/onboarding' | '/portal'
-  id: '__root__' | '/' | '/admin' | '/contact' | '/onboarding' | '/portal'
+  to: '/' | '/admin' | '/contact' | '/onboarding' | '/payment-callback' | '/portal'
+  id: '__root__' | '/' | '/admin' | '/contact' | '/onboarding' | '/payment-callback' | '/portal'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,6 +85,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   ContactRoute: typeof ContactRoute
   OnboardingRoute: typeof OnboardingRoute
+  PaymentCallbackRoute: typeof PaymentCallbackRoute
   PortalRoute: typeof PortalRoute
 }
 
@@ -86,6 +96,13 @@ declare module '@tanstack/react-router' {
       path: '/portal'
       fullPath: '/portal'
       preLoaderRoute: typeof PortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment-callback': {
+      id: '/payment-callback'
+      path: '/payment-callback'
+      fullPath: '/payment-callback'
+      preLoaderRoute: typeof PaymentCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -124,6 +141,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   ContactRoute: ContactRoute,
   OnboardingRoute: OnboardingRoute,
+  PaymentCallbackRoute: PaymentCallbackRoute,
   PortalRoute: PortalRoute,
 }
 export const routeTree = rootRouteImport

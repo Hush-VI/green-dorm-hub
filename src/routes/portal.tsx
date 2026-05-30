@@ -9,11 +9,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.jpg";
-import {
-  useHostel, actions, fmtGHS, fmtTime, fmtDate, initials,
-  type Order, type StoreItem,
-} from "@/lib/hostel-store";
+import { fmtGHS, fmtTime, fmtDate, initials, type Order, type StoreItem } from "@/lib/hostel-store";
 import { PolicyGate } from "@/components/PolicyGate";
+import {
+  useStudent, useCheckIn, useCheckOut, useAcceptPolicy,
+  useUpdateStudent, usePayments, useSettings,
+  useStoreItems, useOrders, usePlaceOrder,
+  useMeters, useStudents,
+  useElectricityLogs, useLogElectricityTopup,
+} from "@/lib/queries";
 
 export const Route = createFileRoute("/portal")({
   head: () => ({ meta: [{ title: "Student Portal — SME Hostels" }] }),
@@ -23,14 +27,30 @@ export const Route = createFileRoute("/portal")({
 type Tab = "home" | "profile" | "fees" | "store" | "more";
 type SubPage = null | "meter" | "history";
 
+// Current student ID is stored in sessionStorage after login
+function getCurrentStudentId(): string {
+  if (typeof window === "undefined") return "";
+  return sessionStorage.getItem("sme_student_id") ?? "";
+}
+
 function Portal() {
   const nav = useNavigate();
   const [tab, setTab] = useState<Tab>("home");
   const [sub, setSub] = useState<SubPage>(null);
+  const currentId = getCurrentStudentId();
 
-  const currentId = useHostel((s) => s.currentStudentId) ?? "SME-2024-001";
-  const student = useHostel((s) => s.students.find((st) => st.id === currentId));
-  const settings = useHostel((s) => s.settings);
+  const { data: student, isLoading } = useStudent(currentId);
+  const { data: settings } = useSettings();
+  const acceptPolicyMut = useAcceptPolicy();
+
+  if (!currentId) {
+    nav({ to: "/" });
+    return null;
+  }
+
+  if (isLoading) {
+    return <div className="grid min-h-screen place-items-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
+  }
 
   if (!student) {
     return (
@@ -43,12 +63,17 @@ function Portal() {
     );
   }
 
-  if (!student.policyAccepted) {
-    return <PolicyGate studentName={student.fullName} onAccept={() => actions.acceptPolicy(student.id)} />;
+  if (!student.policy_accepted) {
+    return (
+      <PolicyGate
+        studentName={student.full_name}
+        onAccept={() => acceptPolicyMut.mutate(student.id)}
+      />
+    );
   }
 
   function switchUser() {
-    actions.setCurrentStudent(null);
+    sessionStorage.removeItem("sme_student_id");
     nav({ to: "/" });
   }
 
@@ -60,21 +85,20 @@ function Portal() {
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      {/* Header */}
       <div className="bg-gradient-primary px-4 pt-6 pb-8 text-white shadow-glass">
         <div className="mx-auto max-w-3xl">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <img src={logo} alt="" className="h-11 w-11 squircle bg-white p-1.5 object-contain" />
               <div>
-                <div className="text-xs uppercase tracking-wider opacity-90">{settings.hostelName}</div>
-                <div className="text-lg font-bold leading-tight">Hi {student.fullName.split(" ")[0]} 👋</div>
+                <div className="text-xs uppercase tracking-wider opacity-90">{settings?.hostel_name ?? "SME Hostels"}</div>
+                <div className="text-lg font-bold leading-tight">Hi {student.full_name.split(" ")[0]} 👋</div>
                 <div className="text-xs opacity-90">{student.course} · {student.id}</div>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => setTab("profile")} className="grid h-10 w-10 place-items-center rounded-full bg-white/20 text-sm font-bold backdrop-blur-md hover:bg-white/30">
-                {initials(student.fullName)}
+                {initials(student.full_name)}
               </button>
               {switchBtn}
             </div>
@@ -82,20 +106,18 @@ function Portal() {
         </div>
       </div>
 
-      {/* Tab content */}
       <div className="mx-auto -mt-4 max-w-3xl px-4">
         <div key={tab + (sub ?? "")} className="animate-fade-in">
-          {tab === "home" && <HomeTab onNavTab={setTab} onSub={setSub} />}
-          {tab === "profile" && <ProfileTab />}
-          {tab === "fees" && <FeesTab />}
-          {tab === "store" && <StoreTab />}
+          {tab === "home" && <HomeTab studentId={currentId} onNavTab={setTab} onSub={setSub} />}
+          {tab === "profile" && <ProfileTab studentId={currentId} />}
+          {tab === "fees" && <FeesTab studentId={currentId} />}
+          {tab === "store" && <StoreTab studentId={currentId} />}
           {tab === "more" && !sub && <MoreTab onSub={setSub} />}
-          {tab === "more" && sub === "meter" && <MeterTab onBack={() => setSub(null)} />}
-          {tab === "more" && sub === "history" && <HistoryTab onBack={() => setSub(null)} />}
+          {tab === "more" && sub === "meter" && <MeterTab studentId={currentId} onBack={() => setSub(null)} />}
+          {tab === "more" && sub === "history" && <HistoryTab studentId={currentId} onBack={() => setSub(null)} />}
         </div>
       </div>
 
-      {/* Bottom nav */}
       <BottomNav tab={tab} onChange={(t) => { setTab(t); setSub(null); }} />
     </div>
   );
@@ -103,76 +125,54 @@ function Portal() {
 
 /* =========================  HOME  ========================= */
 
-function HomeTab({ onNavTab, onSub }: { onNavTab: (t: Tab) => void; onSub: (s: SubPage) => void }) {
-  const studentId = useHostel((s) => s.currentStudentId)!;
-  const s = useHostel((st) => st.students.find((x) => x.id === studentId)!);
-  const settings = useHostel((st) => st.settings);
-  const pendingOrders = useHostel((st) => st.orders.filter((o) => o.studentId === studentId && o.status !== "delivered" && o.status !== "cancelled").length);
-  const meterRoomies = useHostel((st) => st.students.filter((x) => x.meterNo === s.meterNo).length);
-
+function HomeTab({ studentId, onNavTab, onSub }: { studentId: string; onNavTab: (t: Tab) => void; onSub: (s: SubPage) => void }) {
+  const { data: s } = useStudent(studentId);
+  const { data: settings } = useSettings();
+  const { data: orders = [] } = useOrders(studentId);
+  const { data: allStudents = [] } = useStudents();
+  const checkIn = useCheckIn();
+  const checkOut = useCheckOut();
   const [confirm, setConfirm] = useState<"in" | "out" | null>(null);
 
-  const regPct = Math.min(100, (s.regPaid / settings.registrationFee) * 100);
-  const hostelPct = Math.min(100, (s.hostelPaid / settings.hostelFee) * 100);
+  if (!s || !settings) return <div className="py-10 text-center text-sm text-muted-foreground">Loading…</div>;
+
+  const regFee = settings.registration_fee;
+  const hostelFee = settings.hostel_fee;
+  const regPct = Math.min(100, (s.reg_paid / regFee) * 100);
+  const hostelPct = Math.min(100, (s.hostel_paid / hostelFee) * 100);
+  const pendingOrders = orders.filter((o: any) => o.status !== "delivered" && o.status !== "cancelled").length;
+  const meterRoomies = allStudents.filter((x: any) => x.meter_no === s.meter_no).length;
 
   return (
     <div className="space-y-4">
-      {/* Status card */}
       <div className="squircle bg-white p-5 shadow-soft animate-slide-up">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge color={s.checkStatus === "in" ? "primary" : "muted"} icon={s.checkStatus === "in" ? CheckCircle2 : XCircle}>
-            {s.checkStatus === "in" ? "Checked in" : "Checked out"}
+          <Badge color={s.check_status === "in" ? "primary" : "muted"} icon={s.check_status === "in" ? CheckCircle2 : XCircle}>
+            {s.check_status === "in" ? "Checked in" : "Checked out"}
           </Badge>
-          <Badge color={s.regStatus === "paid" ? "primary" : s.regStatus === "partial" ? "amber" : "destructive"}>
-            Reg: {s.regStatus}
+          <Badge color={s.reg_status === "paid" ? "primary" : s.reg_status === "partial" ? "amber" : "destructive"}>
+            Reg: {s.reg_status}
           </Badge>
-          <div className="ml-auto text-xs text-muted-foreground">Last: {fmtTime(s.lastCheckIn)}</div>
+          <div className="ml-auto text-xs text-muted-foreground">Last: {fmtTime(s.last_check_in ? new Date(s.last_check_in).getTime() : undefined)}</div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <button
-            onClick={() => setConfirm("in")}
-            disabled={s.checkStatus === "in"}
-            className="rounded-2xl bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-50 hover:opacity-95"
-          >Check In</button>
-          <button
-            onClick={() => setConfirm("out")}
-            disabled={s.checkStatus === "out"}
-            className="rounded-2xl border border-border bg-white py-3 text-sm font-semibold disabled:opacity-50 hover:bg-muted/40"
-          >Check Out</button>
+          <button onClick={() => setConfirm("in")} disabled={s.check_status === "in" || checkIn.isPending}
+            className="rounded-2xl bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-soft disabled:opacity-50 hover:opacity-95">Check In</button>
+          <button onClick={() => setConfirm("out")} disabled={s.check_status === "out" || checkOut.isPending}
+            className="rounded-2xl border border-border bg-white py-3 text-sm font-semibold disabled:opacity-50 hover:bg-muted/40">Check Out</button>
         </div>
       </div>
 
-      {/* Quick stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard icon={DoorOpen} label="Room" value={s.roomNo} />
-        <StatCard icon={Wallet} label="Hostel Fee" value={s.hostelPaid >= settings.hostelFee ? "Paid" : "Pending"} />
-        <StatCard icon={Zap} label="Meter" value={s.meterNo} />
-        <StatCard icon={CheckCircle2} label="Status" value={s.checkStatus === "in" ? "In" : "Out"} />
+        <StatCard icon={DoorOpen} label="Room" value={s.room_no ?? "—"} />
+        <StatCard icon={Wallet} label="Hostel Fee" value={s.hostel_paid >= hostelFee ? "Paid" : "Pending"} />
+        <StatCard icon={Zap} label="Meter" value={s.meter_no ?? "—"} />
+        <StatCard icon={CheckCircle2} label="Status" value={s.check_status === "in" ? "In" : "Out"} />
       </div>
 
-      {/* Hostel Fee */}
-      <FeeProgressCard
-        title="Hostel Fee"
-        amount={s.hostelPaid}
-        total={settings.hostelFee}
-        pct={hostelPct}
-        accent="primary"
-        ctaLabel="Pay Now"
-        onCta={() => onNavTab("fees")}
-      />
+      <FeeProgressCard title="Hostel Fee" amount={s.hostel_paid} total={hostelFee} pct={hostelPct} accent="primary" ctaLabel="Pay Now" onCta={() => onNavTab("fees")} />
+      <FeeProgressCard title="Registration Fee" amount={s.reg_paid} total={regFee} pct={regPct} accent="blue" ctaLabel="View Details" onCta={() => onNavTab("fees")} />
 
-      {/* Registration Fee */}
-      <FeeProgressCard
-        title="Registration Fee"
-        amount={s.regPaid}
-        total={settings.registrationFee}
-        pct={regPct}
-        accent="blue"
-        ctaLabel="View Details"
-        onCta={() => onNavTab("fees")}
-      />
-
-      {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3">
         <ActionCard icon={Wallet} label="Fees & Payments" onClick={() => onNavTab("fees")} />
         <ActionCard icon={ShoppingBag} label="Hostel Store" badge={pendingOrders} onClick={() => onNavTab("store")} />
@@ -180,12 +180,11 @@ function HomeTab({ onNavTab, onSub }: { onNavTab: (t: Tab) => void; onSub: (s: S
         <ActionCard icon={History} label="Check-In History" onClick={() => { onNavTab("more"); onSub("history"); }} />
       </div>
 
-      {/* Guardian */}
       <div className="squircle bg-white p-5 shadow-soft">
         <div className="text-xs uppercase tracking-wider text-muted-foreground">Guardian Contact</div>
-        <div className="mt-1.5 text-base font-semibold">{s.guardianName}</div>
-        <a href={`tel:${s.guardianPhone}`} className="mt-1 inline-flex items-center gap-1.5 text-sm text-primary">
-          <Phone className="h-3.5 w-3.5" /> {s.guardianPhone}
+        <div className="mt-1.5 text-base font-semibold">{s.guardian_name}</div>
+        <a href={`tel:${s.guardian_phone}`} className="mt-1 inline-flex items-center gap-1.5 text-sm text-primary">
+          <Phone className="h-3.5 w-3.5" /> {s.guardian_phone}
         </a>
       </div>
 
@@ -195,8 +194,8 @@ function HomeTab({ onNavTab, onSub }: { onNavTab: (t: Tab) => void; onSub: (s: S
           body={confirm === "in" ? "Mark yourself as currently in the hostel?" : "Mark yourself as currently out of the hostel?"}
           onCancel={() => setConfirm(null)}
           onConfirm={() => {
-            if (confirm === "in") actions.checkIn(s.id); else actions.checkOut(s.id);
-            toast.success(`Checked ${confirm} successfully`);
+            if (confirm === "in") checkIn.mutate(s.id);
+            else checkOut.mutate(s.id);
             setConfirm(null);
           }}
         />
@@ -207,65 +206,64 @@ function HomeTab({ onNavTab, onSub }: { onNavTab: (t: Tab) => void; onSub: (s: S
 
 /* =========================  PROFILE  ========================= */
 
-function ProfileTab() {
-  const id = useHostel((st) => st.currentStudentId)!;
-  const s = useHostel((st) => st.students.find((x) => x.id === id)!);
+function ProfileTab({ studentId }: { studentId: string }) {
+  const { data: s } = useStudent(studentId);
+  const updateStudent = useUpdateStudent();
   const [edit, setEdit] = useState(false);
-  const [form, setForm] = useState({ phone: s.phone, whatsapp: s.whatsapp, guardianName: s.guardianName, guardianPhone: s.guardianPhone });
+  const [form, setForm] = useState({ phone: "", whatsapp: "", guardian_name: "", guardian_phone: "" });
+
+  if (!s) return null;
+
+  function startEdit() {
+    setForm({ phone: s!.phone, whatsapp: s!.whatsapp, guardian_name: s!.guardian_name, guardian_phone: s!.guardian_phone });
+    setEdit(true);
+  }
 
   function save() {
-    actions.updateStudent(s.id, form);
-    setEdit(false);
-    toast.success("Profile updated");
+    updateStudent.mutate({ id: s!.id, patch: form }, { onSuccess: () => setEdit(false) });
   }
+
   return (
     <div className="space-y-4">
       <div className="squircle bg-white p-6 text-center shadow-soft animate-slide-up">
         <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-gradient-primary text-2xl font-bold text-white shadow-soft">
-          {initials(s.fullName)}
+          {initials(s.full_name)}
         </div>
-        <div className="mt-3 text-lg font-bold">{s.fullName}</div>
+        <div className="mt-3 text-lg font-bold">{s.full_name}</div>
         <div className="text-xs text-muted-foreground">{s.id}</div>
         <div className="mt-3 flex flex-wrap justify-center gap-2">
-          <Badge color={s.regStatus === "paid" ? "primary" : s.regStatus === "partial" ? "amber" : "destructive"}>
-            Reg: {s.regStatus}
-          </Badge>
-          <Badge color={s.checkStatus === "in" ? "primary" : "muted"}>{s.checkStatus === "in" ? "Checked in" : "Checked out"}</Badge>
-          <Badge color={s.policyAccepted ? "primary" : "amber"} icon={ShieldCheck}>
-            {s.policyAccepted ? "Policy accepted" : "Policy pending"}
-          </Badge>
+          <Badge color={s.reg_status === "paid" ? "primary" : s.reg_status === "partial" ? "amber" : "destructive"}>Reg: {s.reg_status}</Badge>
+          <Badge color={s.check_status === "in" ? "primary" : "muted"}>{s.check_status === "in" ? "Checked in" : "Checked out"}</Badge>
+          <Badge color={s.policy_accepted ? "primary" : "amber"} icon={ShieldCheck}>{s.policy_accepted ? "Policy accepted" : "Policy pending"}</Badge>
         </div>
       </div>
 
       <SectionCard title="Account Info">
-        <InfoRow label="Full Name" value={s.fullName} />
+        <InfoRow label="Full Name" value={s.full_name} />
         <InfoRow label="Student ID" value={s.id} />
         <InfoRow label="Course" value={s.course} />
         <InfoRow label="Level" value={s.level} />
-        <InfoRow label="Room Number" value={s.roomNo} />
+        <InfoRow label="Room Number" value={s.room_no ?? "—"} />
       </SectionCard>
 
-      <SectionCard
-        title="Contact Details"
+      <SectionCard title="Contact Details"
         right={!edit ? (
-          <button onClick={() => setEdit(true)} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+          <button onClick={startEdit} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
             <Edit3 className="h-3 w-3" /> Edit
           </button>
         ) : (
           <div className="flex gap-2">
-            <button onClick={() => { setEdit(false); setForm({ phone: s.phone, whatsapp: s.whatsapp, guardianName: s.guardianName, guardianPhone: s.guardianPhone }); }} className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs">
-              <X className="h-3 w-3" /> Cancel
-            </button>
-            <button onClick={save} className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
+            <button onClick={() => setEdit(false)} className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs"><X className="h-3 w-3" /> Cancel</button>
+            <button onClick={save} disabled={updateStudent.isPending} className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
               <Save className="h-3 w-3" /> Save
             </button>
           </div>
         )}
       >
-        <EditableRow label="Phone Number" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} edit={edit} />
-        <EditableRow label="WhatsApp Number" value={form.whatsapp} onChange={(v) => setForm({ ...form, whatsapp: v })} edit={edit} />
-        <EditableRow label="Guardian Name" value={form.guardianName} onChange={(v) => setForm({ ...form, guardianName: v })} edit={edit} />
-        <EditableRow label="Guardian Phone" value={form.guardianPhone} onChange={(v) => setForm({ ...form, guardianPhone: v })} edit={edit} />
+        <EditableRow label="Phone Number" value={form.phone || s.phone} onChange={(v) => setForm({ ...form, phone: v })} edit={edit} />
+        <EditableRow label="WhatsApp Number" value={form.whatsapp || s.whatsapp} onChange={(v) => setForm({ ...form, whatsapp: v })} edit={edit} />
+        <EditableRow label="Guardian Name" value={form.guardian_name || s.guardian_name} onChange={(v) => setForm({ ...form, guardian_name: v })} edit={edit} />
+        <EditableRow label="Guardian Phone" value={form.guardian_phone || s.guardian_phone} onChange={(v) => setForm({ ...form, guardian_phone: v })} edit={edit} />
       </SectionCard>
     </div>
   );
@@ -273,47 +271,50 @@ function ProfileTab() {
 
 /* =========================  FEES  ========================= */
 
-function FeesTab() {
-  const id = useHostel((st) => st.currentStudentId)!;
-  const s = useHostel((st) => st.students.find((x) => x.id === id)!);
-  const settings = useHostel((st) => st.settings);
-  const payments = useHostel((st) => st.payments.filter((p) => p.studentId === id).sort((a, b) => b.date - a.date));
+function FeesTab({ studentId }: { studentId: string }) {
+  const { data: s } = useStudent(studentId);
+  const { data: settings } = useSettings();
+  const { data: payments = [] } = usePayments(studentId);
+
+  if (!s || !settings) return null;
+
+  const sorted = [...payments].sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime());
 
   return (
     <div className="space-y-4">
-      <FeeBreakdown title="Hostel Fee" paid={s.hostelPaid} total={settings.hostelFee} accent="primary" />
-      <FeeBreakdown title="Registration Fee" paid={s.regPaid} total={settings.registrationFee} accent="blue" />
+      <FeeBreakdown title="Hostel Fee" paid={s.hostel_paid} total={settings.hostel_fee} accent="primary" />
+      <FeeBreakdown title="Registration Fee" paid={s.reg_paid} total={settings.registration_fee} accent="blue" />
 
       <div className="squircle bg-white p-5 shadow-soft">
         <div className="mb-3 text-base font-bold">How to Pay</div>
         <PayAccordion title="Bank Transfer" icon={Building2}
           fields={[
-            { label: "Bank Name", value: settings.bankName },
-            { label: "Account Name", value: settings.accountName },
-            { label: "Account Number", value: settings.accountNumber },
+            { label: "Bank Name", value: settings.bank_name },
+            { label: "Account Name", value: settings.account_name },
+            { label: "Account Number", value: settings.account_number },
             { label: "Branch", value: settings.branch },
           ]}
           reference={s.id}
         />
         <PayAccordion title="Mobile Money" icon={Phone}
           fields={[
-            { label: "MoMo Number", value: settings.momoNumber },
-            { label: "Account Name", value: settings.momoName },
+            { label: "MoMo Number", value: settings.momo_number },
+            { label: "Account Name", value: settings.momo_name },
           ]}
           reference={s.id}
         />
       </div>
 
       <SectionCard title="Payment History">
-        {payments.length === 0 && <div className="text-sm text-muted-foreground">No payments yet.</div>}
+        {sorted.length === 0 && <div className="text-sm text-muted-foreground">No payments yet.</div>}
         <div className="divide-y divide-border">
-          {payments.map((p) => (
+          {sorted.map((p) => (
             <div key={p.id} className="flex items-center justify-between py-3">
               <div>
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Receipt className="h-4 w-4 text-primary" /> {p.id}
                 </div>
-                <div className="text-xs text-muted-foreground">{p.type === "registration" ? "Registration" : "Hostel"} · {fmtDate(p.date)}</div>
+                <div className="text-xs text-muted-foreground">{p.type === "registration" ? "Registration" : "Hostel"} · {fmtDate(new Date(p.payment_date).getTime())}</div>
               </div>
               <div className="text-sm font-semibold">{fmtGHS(p.amount)}</div>
             </div>
@@ -322,9 +323,9 @@ function FeesTab() {
       </SectionCard>
 
       <SectionCard title="Need Help?">
-        <a href={`tel:${settings.contactPhone}`} className="flex items-center justify-between rounded-2xl bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
+        <a href={`tel:${settings.contact_phone}`} className="flex items-center justify-between rounded-2xl bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
           <span className="inline-flex items-center gap-2"><Phone className="h-4 w-4" /> Call Management</span>
-          <span>{settings.contactPhone}</span>
+          <span>{settings.contact_phone}</span>
         </a>
       </SectionCard>
     </div>
@@ -339,9 +340,7 @@ function PayAccordion({ title, icon: Icon, fields, reference }: {
   return (
     <div className="mb-3 squircle border border-border bg-white">
       <button onClick={() => setOpen(!open)} className="flex w-full items-center justify-between p-4">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <Icon className="h-4 w-4 text-primary" /> {title}
-        </div>
+        <div className="flex items-center gap-2 text-sm font-semibold"><Icon className="h-4 w-4 text-primary" /> {title}</div>
         {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
       {open && (
@@ -377,45 +376,39 @@ function CopyRow({ label, value }: { label: string; value: string }) {
 
 const CATEGORIES = ["All", "Water", "Drinks", "Food", "Toiletries", "Stationery", "Other"];
 
-function StoreTab() {
-  const items = useHostel((s) => s.storeItems);
-  const studentId = useHostel((s) => s.currentStudentId)!;
-  const orders = useHostel((s) => s.orders.filter((o) => o.studentId === studentId).sort((a, b) => b.createdAt - a.createdAt));
+function StoreTab({ studentId }: { studentId: string }) {
+  const { data: items = [] } = useStoreItems();
+  const { data: orders = [] } = useOrders(studentId);
+  const placeOrderMut = usePlaceOrder();
 
   const [cat, setCat] = useState("All");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [note, setNote] = useState("");
   const [drawer, setDrawer] = useState(false);
-  const [placing, setPlacing] = useState(false);
 
-  const visible = items.filter((i) => cat === "All" || i.category === cat);
-  const total = useMemo(() => Object.entries(cart).reduce((s, [id, q]) => s + (items.find((i) => i.id === id)?.price ?? 0) * q, 0), [cart, items]);
+  const visible = items.filter((i: any) => cat === "All" || i.category === cat);
+  const total = useMemo(() => Object.entries(cart).reduce((s, [id, q]) => s + (items.find((i: any) => i.id === id)?.price ?? 0) * q, 0), [cart, items]);
   const cartCount = Object.values(cart).reduce((a, b) => a + b, 0);
 
-  function add(it: StoreItem) { setCart((c) => ({ ...c, [it.id]: (c[it.id] ?? 0) + 1 })); }
+  function add(it: typeof items[0]) { setCart((c) => ({ ...c, [it.id]: (c[it.id] ?? 0) + 1 })); }
   function dec(id: string) {
-    setCart((c) => {
-      const n = (c[id] ?? 0) - 1;
-      const { [id]: _, ...rest } = c;
-      return n <= 0 ? rest : { ...c, [id]: n };
-    });
+    setCart((c) => { const n = (c[id] ?? 0) - 1; const { [id]: _, ...rest } = c; return n <= 0 ? rest : { ...c, [id]: n }; });
   }
 
   function place() {
     if (cartCount === 0) return;
-    setPlacing(true);
-    setTimeout(() => {
-      const o: Order = {
-        id: "O-" + Math.floor(1000 + Math.random() * 9000),
-        studentId, createdAt: Date.now(),
-        items: Object.entries(cart).map(([itemId, qty]) => ({ itemId, qty })),
-        note: note || undefined, total, status: "pending", unread: true,
-      };
-      actions.placeOrder(o);
-      setCart({}); setNote(""); setDrawer(false); setPlacing(false);
-      toast.success("Order placed! Management has been notified.");
-    }, 600);
+    placeOrderMut.mutate({
+      id: "O-" + Math.floor(1000 + Math.random() * 9000),
+      student_id: studentId,
+      note: note || null,
+      total,
+      items: Object.entries(cart).map(([item_id, qty]) => ({ item_id, qty })),
+    }, {
+      onSuccess: () => { setCart({}); setNote(""); setDrawer(false); },
+    });
   }
+
+  const myOrders = [...orders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return (
     <div className="space-y-4 pb-4">
@@ -431,7 +424,7 @@ function StoreTab() {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        {visible.map((it) => {
+        {visible.map((it: any) => {
           const qty = cart[it.id] ?? 0;
           const lowStock = it.stock <= 5 && it.stock > 0;
           const out = !it.available || it.stock === 0;
@@ -463,13 +456,13 @@ function StoreTab() {
       </div>
 
       <SectionCard title="My Orders">
-        {orders.length === 0 && <div className="text-sm text-muted-foreground">No orders yet.</div>}
+        {myOrders.length === 0 && <div className="text-sm text-muted-foreground">No orders yet.</div>}
         <div className="space-y-2">
-          {orders.map((o) => (
+          {myOrders.map((o) => (
             <div key={o.id} className="flex items-center justify-between rounded-2xl bg-muted/40 p-3">
               <div>
-                <div className="text-sm font-semibold">{o.id} · {o.items.reduce((s, l) => s + l.qty, 0)} items</div>
-                <div className="text-xs text-muted-foreground">{fmtTime(o.createdAt)}</div>
+                <div className="text-sm font-semibold">{o.id} · {(o.order_items as {qty:number}[])?.reduce((s, l) => s + l.qty, 0) ?? "?"} items</div>
+                <div className="text-xs text-muted-foreground">{fmtTime(new Date(o.created_at).getTime())}</div>
               </div>
               <div className="text-right">
                 <div className="text-sm font-bold">{fmtGHS(o.total)}</div>
@@ -480,7 +473,6 @@ function StoreTab() {
         </div>
       </SectionCard>
 
-      {/* Cart FAB */}
       {cartCount > 0 && (
         <button onClick={() => setDrawer(true)}
           className="fixed bottom-28 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-gradient-primary px-5 py-3 text-sm font-semibold text-white shadow-glass animate-pop">
@@ -488,7 +480,6 @@ function StoreTab() {
         </button>
       )}
 
-      {/* Drawer */}
       {drawer && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 animate-fade-in" onClick={() => setDrawer(false)}>
           <div onClick={(e) => e.stopPropagation()} className="w-full max-w-3xl rounded-t-3xl bg-white p-5 pb-8 shadow-glass animate-slide-up max-h-[85vh] overflow-y-auto">
@@ -499,7 +490,7 @@ function StoreTab() {
             </div>
             <div className="mt-3 space-y-2">
               {Object.entries(cart).map(([id, qty]) => {
-                const it = items.find((i) => i.id === id)!;
+                const it = items.find((i: any) => i.id === id)!;
                 return (
                   <div key={id} className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3">
                     <div className="text-2xl">{it.emoji}</div>
@@ -523,9 +514,9 @@ function StoreTab() {
               <span>Total</span><span>{fmtGHS(total)}</span>
             </div>
             <div className="mt-1 text-xs text-muted-foreground">Pay on delivery — cash or MoMo.</div>
-            <button onClick={place} disabled={placing}
+            <button onClick={place} disabled={placeOrderMut.isPending}
               className="mt-3 w-full rounded-2xl bg-gradient-primary py-3 text-sm font-semibold text-white shadow-soft disabled:opacity-50">
-              {placing ? "Placing…" : "Place Order"}
+              {placeOrderMut.isPending ? "Placing…" : "Place Order"}
             </button>
           </div>
         </div>
@@ -534,129 +525,210 @@ function StoreTab() {
   );
 }
 
-function OrderStatusBadge({ status }: { status: Order["status"] }) {
-  const map = {
-    pending: "bg-amber-100 text-amber-700",
-    confirmed: "bg-sky-100 text-sky-700",
-    ready: "bg-violet-100 text-violet-700",
-    delivered: "bg-primary/10 text-primary",
+function OrderStatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    pending: "bg-amber-100 text-amber-700", confirmed: "bg-sky-100 text-sky-700",
+    ready: "bg-violet-100 text-violet-700", delivered: "bg-primary/10 text-primary",
     cancelled: "bg-muted text-muted-foreground",
-  } as const;
-  return <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ${map[status]}`}>{status}</span>;
+  };
+  return <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ${map[status] ?? "bg-muted text-muted-foreground"}`}>{status}</span>;
 }
 
-/* =========================  MORE  ========================= */
+/* =========================  MORE / METER / HISTORY  ========================= */
 
 function MoreTab({ onSub }: { onSub: (s: SubPage) => void }) {
-  const settings = useHostel((s) => s.settings);
+  const { data: settings } = useSettings();
   return (
     <div className="space-y-3">
       <button onClick={() => onSub("history")} className="flex w-full items-center justify-between squircle bg-white p-5 shadow-soft hover:bg-muted/30">
         <div className="flex items-center gap-3">
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary"><History className="h-5 w-5" /></div>
-          <div className="text-left">
-            <div className="text-sm font-semibold">Check-In History</div>
-            <div className="text-xs text-muted-foreground">All your check-ins & outs</div>
-          </div>
+          <div className="text-left"><div className="text-sm font-semibold">Check-In History</div><div className="text-xs text-muted-foreground">All your check-ins & outs</div></div>
         </div>
         <ChevronRight className="h-5 w-5 text-muted-foreground" />
       </button>
       <button onClick={() => onSub("meter")} className="flex w-full items-center justify-between squircle bg-white p-5 shadow-soft hover:bg-muted/30">
         <div className="flex items-center gap-3">
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-violet-100 text-violet-700"><Zap className="h-5 w-5" /></div>
-          <div className="text-left">
-            <div className="text-sm font-semibold">Meter Info</div>
-            <div className="text-xs text-muted-foreground">Rooms & students sharing</div>
-          </div>
+          <div className="text-left"><div className="text-sm font-semibold">Meter Info</div><div className="text-xs text-muted-foreground">Rooms & students sharing</div></div>
         </div>
         <ChevronRight className="h-5 w-5 text-muted-foreground" />
       </button>
       <Link to="/contact" className="flex items-center justify-between squircle bg-white p-5 shadow-soft hover:bg-muted/30">
         <div className="flex items-center gap-3">
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-sky-100 text-sky-700"><Phone className="h-5 w-5" /></div>
-          <div className="text-left">
-            <div className="text-sm font-semibold">Emergency & Contacts</div>
-            <div className="text-xs text-muted-foreground">Reach the hostel quickly</div>
-          </div>
+          <div className="text-left"><div className="text-sm font-semibold">Emergency & Contacts</div><div className="text-xs text-muted-foreground">Reach the hostel quickly</div></div>
         </div>
         <ChevronRight className="h-5 w-5 text-muted-foreground" />
       </Link>
-
-      <SectionCard title="Hostel Info">
-        <InfoRow label="Hostel" value={settings.hostelName} />
-        <InfoRow label="Address" value={settings.address} />
-        <InfoRow label="Phone" value={settings.contactPhone} />
-        <InfoRow label="WhatsApp" value={settings.contactWhatsapp} />
-      </SectionCard>
+      {settings && (
+        <SectionCard title="Hostel Info">
+          <InfoRow label="Hostel" value={settings.hostel_name} />
+          <InfoRow label="Address" value={settings.address} />
+          <InfoRow label="Phone" value={settings.contact_phone} />
+          <InfoRow label="WhatsApp" value={settings.contact_whatsapp} />
+        </SectionCard>
+      )}
     </div>
   );
 }
 
-function MeterTab({ onBack }: { onBack: () => void }) {
-  const id = useHostel((s) => s.currentStudentId)!;
-  const me = useHostel((s) => s.students.find((x) => x.id === id)!);
-  const meter = useHostel((s) => s.meters.find((m) => m.no === me.meterNo)!);
-  const roommates = useHostel((s) => s.students.filter((st) => st.meterNo === me.meterNo));
+function MeterTab({ studentId, onBack }: { studentId: string; onBack: () => void }) {
+  const { data: me } = useStudent(studentId);
+  const { data: meters = [] } = useMeters();
+  const { data: allStudents = [] } = useStudents();
+  const { data: elecLogs = [] } = useElectricityLogs(me?.meter_no ?? undefined);
+  const logTopup = useLogElectricityTopup();
+
+  const [showTopupForm, setShowTopupForm] = useState(false);
+  const [topupAmount, setTopupAmount] = useState("");
+  const [topupConfirmation, setTopupConfirmation] = useState("");
+
+  if (!me) return null;
+  const meter = meters.find((m: any) => m.no === me.meter_no);
+  const roommates = allStudents.filter((s: any) => s.meter_no === me.meter_no);
+
+  if (!meter) return (
+    <div className="space-y-4">
+      <button onClick={onBack} className="text-sm text-primary">‹ Back</button>
+      <div className="py-10 text-center text-sm text-muted-foreground">No meter assigned to your room yet. Contact management.</div>
+    </div>
+  );
+
+  function submitTopup(e: React.FormEvent) {
+    e.preventDefault();
+    if (!me?.meter_no) return;
+    logTopup.mutate(
+      { studentId, meterNo: me.meter_no, amount: Number(topupAmount), confirmation: topupConfirmation },
+      { onSuccess: () => { setShowTopupForm(false); setTopupAmount(""); setTopupConfirmation(""); } },
+    );
+  }
+
   return (
     <div className="space-y-4">
       <button onClick={onBack} className="text-sm text-primary">‹ Back</button>
+
+      {/* Meter header */}
       <div className="squircle bg-white p-6 text-center shadow-soft animate-slide-up">
         <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-violet-100 text-violet-700"><Zap className="h-8 w-8" /></div>
         <div className="mt-3 text-xs uppercase tracking-wider text-muted-foreground">Your Meter</div>
         <div className="text-3xl font-bold">{meter.no}</div>
       </div>
 
+      {/* Rooms */}
       <SectionCard title="Rooms on this meter">
         <div className="flex flex-wrap gap-2">
-          {meter.rooms.map((r) => (
-            <span key={r} className={`rounded-full px-3 py-1 text-xs font-medium ${r === me.roomNo ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>{r}</span>
+          {(meter.rooms as string[]).map((r) => (
+            <span key={r} className={`rounded-full px-3 py-1 text-xs font-medium ${r === me.room_no ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>{r}</span>
           ))}
         </div>
       </SectionCard>
 
+      {/* Meter-mates */}
       <SectionCard title={`Students sharing (${roommates.length})`}>
         <div className="divide-y divide-border">
-          {roommates.map((s) => (
+          {roommates.map((s: any) => (
             <div key={s.id} className="flex items-center justify-between py-2">
               <div className="flex items-center gap-3">
-                <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-xs font-bold text-white">{initials(s.fullName)}</div>
-                <div>
-                  <div className="text-sm font-medium">{s.fullName}</div>
-                  <div className="text-xs text-muted-foreground">{s.id}</div>
-                </div>
+                <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-primary text-xs font-bold text-white">{initials(s.full_name)}</div>
+                <div><div className="text-sm font-medium">{s.full_name}</div><div className="text-xs text-muted-foreground">{s.id}</div></div>
               </div>
-              <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{s.roomNo}</span>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{s.room_no}</span>
             </div>
           ))}
         </div>
       </SectionCard>
 
+      {/* Management notice */}
       {meter.notice && (
         <div className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
           <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
-          <div>
-            <div className="text-sm font-semibold text-amber-900">Management Notice</div>
-            <div className="text-xs text-amber-800">{meter.notice}</div>
-          </div>
+          <div><div className="text-sm font-semibold text-amber-900">Management Notice</div><div className="text-xs text-amber-800">{meter.notice}</div></div>
         </div>
       )}
+
+      {/* ── Prepaid electricity top-up ── */}
+      <div className="squircle bg-white p-5 shadow-soft">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-base font-bold">Log Prepaid Top-up</div>
+            <div className="text-xs text-muted-foreground">Bought electricity outside? Log it here — your meter-mates will be notified via SMS.</div>
+          </div>
+          <button onClick={() => setShowTopupForm((v) => !v)}
+            className="rounded-full bg-violet-100 px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-200">
+            {showTopupForm ? "Cancel" : "+ Log top-up"}
+          </button>
+        </div>
+
+        {showTopupForm && (
+          <form onSubmit={submitTopup} className="mt-3 space-y-3 border-t border-border pt-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium">Amount bought (GHS)</label>
+              <input type="number" min="1" step="0.01" required value={topupAmount} onChange={(e) => setTopupAmount(e.target.value)}
+                placeholder="e.g. 50.00"
+                className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium">Paste your confirmation SMS</label>
+              <textarea required value={topupConfirmation} onChange={(e) => setTopupConfirmation(e.target.value)}
+                placeholder="Paste the full confirmation message you received after buying the prepaid units…"
+                rows={3}
+                className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div className="rounded-xl bg-violet-50 p-3 text-xs text-violet-800">
+              This will be broadcast to all {roommates.length} students on meter <strong>{meter.no}</strong> via SMS.
+            </div>
+            <button type="submit" disabled={logTopup.isPending}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 py-3 text-sm font-semibold text-white disabled:opacity-50">
+              {logTopup.isPending ? "Sending…" : `Notify ${roommates.length} meter-mates via SMS`}
+            </button>
+          </form>
+        )}
+      </div>
+
+      {/* Top-up history for this meter */}
+      <SectionCard title="Meter Top-up History">
+        {elecLogs.length === 0 && <div className="text-sm text-muted-foreground">No top-ups logged yet.</div>}
+        <div className="divide-y divide-border">
+          {elecLogs.map((log: any) => (
+            <div key={log.id} className="py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="grid h-8 w-8 place-items-center rounded-full bg-violet-100 text-violet-700 text-xs font-bold">
+                    {initials(log.students?.full_name ?? "?")}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">{log.students?.full_name ?? "Unknown"}</div>
+                    <div className="text-xs text-muted-foreground">{log.students?.room_no} · {fmtTime(new Date(log.logged_at).getTime())}</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-violet-700">GHS {Number(log.amount).toFixed(2)}</div>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${log.sms_status === "sent" ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
+                    SMS {log.sms_status}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-1.5 rounded-xl bg-muted/40 px-3 py-2 text-xs text-muted-foreground line-clamp-2">{log.confirmation}</div>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
     </div>
   );
 }
 
-function HistoryTab({ onBack }: { onBack: () => void }) {
-  const id = useHostel((s) => s.currentStudentId)!;
-  const s = useHostel((st) => st.students.find((x) => x.id === id)!);
-  // build mock log entries
+function HistoryTab({ studentId, onBack }: { studentId: string; onBack: () => void }) {
+  const { data: s } = useStudent(studentId);
+  if (!s) return null;
+
+  // Build log from last_check_in / last_check_out stored on the student row
   const log = useMemo(() => {
     const out: { in: number; out?: number }[] = [];
-    if (s.lastCheckIn) out.push({ in: s.lastCheckIn, out: s.checkStatus === "out" ? s.lastCheckOut : undefined });
-    for (let i = 1; i < 10; i++) {
-      const inTs = Date.now() - i * 86400_000 * 2;
-      out.push({ in: inTs, out: inTs + 6 * 3600_000 });
-    }
+    if (s.last_check_in) out.push({ in: new Date(s.last_check_in).getTime(), out: s.last_check_out ? new Date(s.last_check_out).getTime() : undefined });
     return out;
   }, [s]);
+
   const month = new Date().getMonth();
   const thisMonth = log.filter((l) => new Date(l.in).getMonth() === month).length;
 
@@ -668,6 +740,7 @@ function HistoryTab({ onBack }: { onBack: () => void }) {
         <StatCard icon={CheckCircle2} label="This Month" value={String(thisMonth)} />
       </div>
       <SectionCard title="Activity Log">
+        {log.length === 0 && <div className="text-sm text-muted-foreground">No check-in history yet.</div>}
         <div className="divide-y divide-border">
           {log.map((l, i) => (
             <div key={i} className="flex items-center justify-between py-3">
@@ -676,7 +749,7 @@ function HistoryTab({ onBack }: { onBack: () => void }) {
                 <div className="text-xs text-muted-foreground">In {fmtTime(l.in)} · Out {l.out ? fmtTime(l.out) : "—"}</div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px]">{s.roomNo}</span>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px]">{s.room_no}</span>
                 <Badge color={l.out ? "muted" : "primary"}>{l.out ? "Completed" : "Active"}</Badge>
               </div>
             </div>
@@ -687,31 +760,26 @@ function HistoryTab({ onBack }: { onBack: () => void }) {
   );
 }
 
-/* =========================  SHARED  ========================= */
+/* =========================  SHARED UI  ========================= */
 
 function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {
   const tabs: { key: Tab; label: string; icon: typeof Home }[] = [
-    { key: "home", label: "Home", icon: Home },
-    { key: "profile", label: "Profile", icon: User },
-    { key: "fees", label: "Fees", icon: Wallet },
-    { key: "store", label: "Store", icon: ShoppingBag },
+    { key: "home", label: "Home", icon: Home }, { key: "profile", label: "Profile", icon: User },
+    { key: "fees", label: "Fees", icon: Wallet }, { key: "store", label: "Store", icon: ShoppingBag },
     { key: "more", label: "More", icon: MoreHorizontal },
   ];
   const idx = tabs.findIndex((t) => t.key === tab);
   return (
     <nav className="fixed bottom-3 left-1/2 z-30 -translate-x-1/2 safe-bottom">
       <div className="glass-strong relative flex items-center gap-1 rounded-full p-1.5">
-        <div
-          className="absolute top-1.5 bottom-1.5 rounded-full bg-gradient-primary shadow-soft transition-all duration-500"
-          style={{ width: `calc((100% - 12px) / 5)`, transform: `translateX(calc(${idx} * 100%))`, transitionTimingFunction: "cubic-bezier(.34,1.56,.64,1)" }}
-        />
+        <div className="absolute top-1.5 bottom-1.5 rounded-full bg-gradient-primary shadow-soft transition-all duration-500"
+          style={{ width: `calc((100% - 12px) / 5)`, transform: `translateX(calc(${idx} * 100%))`, transitionTimingFunction: "cubic-bezier(.34,1.56,.64,1)" }} />
         {tabs.map((t) => {
           const active = t.key === tab;
           return (
             <button key={t.key} onClick={() => onChange(t.key)}
               className={`relative z-10 flex w-16 flex-col items-center gap-0.5 rounded-full py-2 text-[10px] font-medium transition ${active ? "text-white" : "text-foreground/70"}`}>
-              <t.icon className="h-5 w-5" />
-              {t.label}
+              <t.icon className="h-5 w-5" />{t.label}
             </button>
           );
         })}
@@ -721,23 +789,12 @@ function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) 
 }
 
 function Badge({ children, color, icon: Icon }: { children: React.ReactNode; color: "primary" | "amber" | "destructive" | "muted" | "blue"; icon?: typeof CheckCircle2 }) {
-  const map = {
-    primary: "bg-primary/10 text-primary",
-    amber: "bg-amber-100 text-amber-700",
-    destructive: "bg-destructive/10 text-destructive",
-    muted: "bg-muted text-muted-foreground",
-    blue: "bg-sky-100 text-sky-700",
-  };
+  const map = { primary: "bg-primary/10 text-primary", amber: "bg-amber-100 text-amber-700", destructive: "bg-destructive/10 text-destructive", muted: "bg-muted text-muted-foreground", blue: "bg-sky-100 text-sky-700" };
   return <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium capitalize ${map[color]}`}>{Icon && <Icon className="h-3 w-3" />}{children}</span>;
 }
 
 function StatCard({ icon: Icon, label, value }: { icon: typeof Home; label: string; value: string }) {
-  return (
-    <div className="squircle bg-white p-4 shadow-soft">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground"><Icon className="h-3.5 w-3.5" />{label}</div>
-      <div className="mt-1 text-base font-bold">{value}</div>
-    </div>
-  );
+  return <div className="squircle bg-white p-4 shadow-soft"><div className="flex items-center gap-2 text-xs text-muted-foreground"><Icon className="h-3.5 w-3.5" />{label}</div><div className="mt-1 text-base font-bold">{value}</div></div>;
 }
 
 function ActionCard({ icon: Icon, label, badge, onClick }: { icon: typeof Home; label: string; badge?: number; onClick: () => void }) {
@@ -751,25 +808,16 @@ function ActionCard({ icon: Icon, label, badge, onClick }: { icon: typeof Home; 
   );
 }
 
-function FeeProgressCard({ title, amount, total, pct, accent, ctaLabel, onCta }: {
-  title: string; amount: number; total: number; pct: number; accent: "primary" | "blue"; ctaLabel: string; onCta: () => void;
-}) {
+function FeeProgressCard({ title, amount, total, pct, accent, ctaLabel, onCta }: { title: string; amount: number; total: number; pct: number; accent: "primary" | "blue"; ctaLabel: string; onCta: () => void }) {
   const bar = accent === "primary" ? "bg-primary" : "bg-sky-500";
   return (
     <div className="squircle bg-white p-5 shadow-soft">
       <div className="text-xs uppercase tracking-wider text-muted-foreground">{title}</div>
       <div className="mt-1 flex items-end justify-between">
-        <div>
-          <div className="text-3xl font-bold">{fmtGHS(amount)}</div>
-          <div className="text-xs text-muted-foreground">of {fmtGHS(total)}</div>
-        </div>
-        <button onClick={onCta} className={`rounded-full ${accent === "primary" ? "bg-primary text-primary-foreground" : "bg-sky-500 text-white"} px-4 py-2 text-xs font-semibold shadow-soft`}>
-          {ctaLabel}
-        </button>
+        <div><div className="text-3xl font-bold">{fmtGHS(amount)}</div><div className="text-xs text-muted-foreground">of {fmtGHS(total)}</div></div>
+        <button onClick={onCta} className={`rounded-full ${accent === "primary" ? "bg-primary text-primary-foreground" : "bg-sky-500 text-white"} px-4 py-2 text-xs font-semibold shadow-soft`}>{ctaLabel}</button>
       </div>
-      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
-        <div className={`h-full ${bar} transition-all`} style={{ width: `${pct}%` }} />
-      </div>
+      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted"><div className={`h-full ${bar} transition-all`} style={{ width: `${pct}%` }} /></div>
     </div>
   );
 }
@@ -789,44 +837,24 @@ function FeeBreakdown({ title, paid, total, accent }: { title: string; paid: num
         <div><div className="text-xs text-muted-foreground">Paid</div><div className="text-sm font-semibold text-primary">{fmtGHS(paid)}</div></div>
         <div><div className="text-xs text-muted-foreground">Balance</div><div className="text-sm font-semibold text-amber-700">{fmtGHS(balance)}</div></div>
       </div>
-      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
-        <div className={`h-full ${accent === "primary" ? "bg-primary" : "bg-sky-500"} transition-all`} style={{ width: `${pct}%` }} />
-      </div>
+      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted"><div className={`h-full ${accent === "primary" ? "bg-primary" : "bg-sky-500"} transition-all`} style={{ width: `${pct}%` }} /></div>
     </div>
   );
 }
 
 function SectionCard({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="squircle bg-white p-5 shadow-soft">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="text-base font-bold">{title}</div>
-        {right}
-      </div>
-      {children}
-    </div>
-  );
+  return <div className="squircle bg-white p-5 shadow-soft"><div className="mb-3 flex items-center justify-between"><div className="text-base font-bold">{title}</div>{right}</div>{children}</div>;
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between border-b border-border py-2 last:border-none">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-sm font-medium">{value}</div>
-    </div>
-  );
+  return <div className="flex items-center justify-between border-b border-border py-2 last:border-none"><div className="text-xs text-muted-foreground">{label}</div><div className="text-sm font-medium">{value}</div></div>;
 }
 
 function EditableRow({ label, value, onChange, edit }: { label: string; value: string; onChange: (v: string) => void; edit: boolean }) {
   return (
     <div className="flex items-center justify-between border-b border-border py-2 last:border-none">
       <div className="text-xs text-muted-foreground">{label}</div>
-      {edit ? (
-        <input value={value} onChange={(e) => onChange(e.target.value)}
-          className="w-1/2 rounded-lg border border-border bg-white px-2 py-1 text-right text-sm" />
-      ) : (
-        <div className="text-sm font-medium">{value}</div>
-      )}
+      {edit ? <input value={value} onChange={(e) => onChange(e.target.value)} className="w-1/2 rounded-lg border border-border bg-white px-2 py-1 text-right text-sm" /> : <div className="text-sm font-medium">{value}</div>}
     </div>
   );
 }

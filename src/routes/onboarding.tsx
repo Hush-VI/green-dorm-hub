@@ -1,54 +1,126 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   User, Phone, MessageCircle, BookOpen, Layers, DoorOpen, ShieldCheck,
   AtSign, Lock, ArrowRight, ArrowLeft, CheckCircle2, FileText, Sparkles,
+  Zap, CreditCard, Loader2,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import building from "@/assets/building.jpg";
+import { useCreateStudent, useRooms, useMeters, useSettings, useInitPayment } from "@/lib/queries";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
       { title: "Student Onboarding — SME Hostels" },
-      { name: "description", content: "Create your SME Hostels student account in two simple steps." },
+      { name: "description", content: "Create your SME Hostels student account." },
     ],
   }),
   component: Onboarding,
 });
 
+type Step = 1 | 2 | 3; // 1=details, 2=policy, 3=payment
+
 type Form = {
   fullName: string; phone: string; whatsapp: string; course: string;
-  level: string; room: string; guardianPhone: string; username: string; password: string;
+  level: string; roomNo: string; guardianPhone: string; username: string; password: string;
 };
 
 const empty: Form = {
   fullName: "", phone: "", whatsapp: "", course: "", level: "",
-  room: "", guardianPhone: "", username: "", password: "",
+  roomNo: "", guardianPhone: "", username: "", password: "",
 };
 
 function Onboarding() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<Step>(1);
   const [form, setForm] = useState<Form>(empty);
   const [accepted, setAccepted] = useState(false);
+  const [createdStudentId, setCreatedStudentId] = useState<string | null>(null);
+
+  const { data: rooms = [], isLoading: roomsLoading } = useRooms();
+  const { data: meters = [] } = useMeters();
+  const { data: settings } = useSettings();
+  const createStudent = useCreateStudent();
+  const initPayment = useInitPayment();
 
   const upd = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm({ ...form, [k]: e.target.value });
+    setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  function submitInfo(e: React.FormEvent) {
+  // Auto-resolve meter from selected room
+  const resolvedMeter = useMemo(() => {
+    if (!form.roomNo) return null;
+    const room = rooms.find((r: any) => r.no === form.roomNo);
+    return room?.meter_no ?? null;
+  }, [form.roomNo, rooms]);
+
+  function submitDetails(e: React.FormEvent) {
     e.preventDefault();
     setStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function finish() {
+  function acceptPolicy() {
     if (!accepted) return;
-    try {
-      localStorage.setItem("sme_student_profile", JSON.stringify({ ...form, password: undefined, acceptedAt: Date.now() }));
-    } catch {}
-    navigate({ to: "/portal" });
+    // Create the student account now (policy_accepted = true)
+    const studentId = "SME-" + new Date().getFullYear() + "-" + String(Math.floor(100 + Math.random() * 900));
+    createStudent.mutate(
+      {
+        id: studentId,
+        full_name: form.fullName,
+        phone: form.phone,
+        whatsapp: form.whatsapp,
+        course: form.course,
+        level: form.level,
+        room_no: form.roomNo || null,
+        meter_no: resolvedMeter,
+        guardian_name: "",
+        guardian_phone: form.guardianPhone,
+        username: form.username,
+        reg_status: "unpaid",
+        reg_paid: 0,
+        hostel_paid: 0,
+        check_status: "out",
+        policy_accepted: true,
+        accepted_at: new Date().toISOString(),
+      },
+      {
+        onSuccess: (student) => {
+          try {
+            localStorage.setItem("sme_student_profile", JSON.stringify({ id: student.id, fullName: student.full_name }));
+          } catch {}
+          sessionStorage.setItem("sme_student_id", student.id);
+          setCreatedStudentId(student.id);
+          setStep(3);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        },
+      },
+    );
   }
+
+  function payNow() {
+    if (!createdStudentId || !settings) return;
+    const callbackUrl = `${window.location.origin}/payment-callback`;
+    initPayment.mutate(
+      {
+        studentId: createdStudentId,
+        email: `${form.username}@smehostels.com`,
+        amountGhs: settings.registration_fee,
+        callbackUrl,
+      },
+      {
+        onSuccess: ({ url }) => {
+          window.location.href = url;
+        },
+      },
+    );
+  }
+
+  const stepLabels: { n: Step; label: string }[] = [
+    { n: 1, label: "Your details" },
+    { n: 2, label: "Policy" },
+    { n: 3, label: "Payment" },
+  ];
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
@@ -69,15 +141,22 @@ function Onboarding() {
         </div>
 
         {/* Stepper */}
-        <div className="mb-5 flex items-center gap-3">
-          <StepDot n={1} active={step >= 1} done={step > 1} label="Your details" />
-          <div className={`h-1 flex-1 rounded-full ${step > 1 ? "bg-white" : "bg-white/30"}`} />
-          <StepDot n={2} active={step >= 2} done={false} label="Guidelines" />
+        <div className="mb-5 flex items-center gap-2">
+          {stepLabels.map((s, i) => (
+            <div key={s.n} className="flex flex-1 items-center gap-2">
+              <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-bold transition ${step >= s.n ? "bg-white text-primary shadow-soft" : "bg-white/30 text-white"}`}>
+                {step > s.n ? <CheckCircle2 className="h-4 w-4" /> : s.n}
+              </div>
+              <span className="hidden text-sm font-medium text-white sm:inline">{s.label}</span>
+              {i < stepLabels.length - 1 && <div className={`h-1 flex-1 rounded-full ${step > s.n ? "bg-white" : "bg-white/30"}`} />}
+            </div>
+          ))}
         </div>
 
         <div className="glass squircle p-6 shadow-glass animate-slide-up sm:p-8">
-          {step === 1 ? (
-            <form onSubmit={submitInfo} className="space-y-4">
+          {/* ── STEP 1: Details ── */}
+          {step === 1 && (
+            <form onSubmit={submitDetails} className="space-y-4">
               <div>
                 <h2 className="text-xl font-semibold">Tell us about you</h2>
                 <p className="text-sm text-muted-foreground">We use this to set up your room access and billing.</p>
@@ -92,14 +171,41 @@ function Onboarding() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field icon={BookOpen} label="Course / Program" placeholder="BSc Computer Science" value={form.course} onChange={upd("course")} required />
-                <SelectField icon={Layers} label="Level" value={form.level} onChange={upd("level")} required
-                  options={["100", "200", "300", "400", "500", "600"]} />
+                <SelectField icon={Layers} label="Level" value={form.level} onChange={upd("level")} required placeholder="Select level"
+                  options={["100", "200", "300", "400", "500", "600"].map((o) => ({ value: o, label: `Level ${o}` }))} />
               </div>
 
+              {/* Room dropdown — populated from DB */}
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field icon={DoorOpen} label="Room number" placeholder="B-304" value={form.room} onChange={upd("room")} required />
-                <Field icon={ShieldCheck} type="tel" label="Guardian's phone" placeholder="+233 24 000 0000" value={form.guardianPhone} onChange={upd("guardianPhone")} required />
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">Room number</label>
+                  <div className="relative">
+                    <DoorOpen className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <select value={form.roomNo} onChange={upd("roomNo")} required
+                      className="w-full appearance-none rounded-2xl border border-border bg-white/80 py-3 pl-10 pr-4 text-sm outline-none ring-primary/30 focus:ring-2">
+                      <option value="">{roomsLoading ? "Loading rooms…" : "Select your room"}</option>
+                      {rooms
+                        .filter((r: any) => r.status === "available")
+                        .map((r: any) => (
+                          <option key={r.no} value={r.no}>{r.no}</option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Meter — auto-resolved, read-only */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-foreground">Electricity meter</label>
+                  <div className="relative">
+                    <Zap className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <div className={`w-full rounded-2xl border border-border py-3 pl-10 pr-4 text-sm ${resolvedMeter ? "bg-primary/5 text-primary font-medium" : "bg-white/50 text-muted-foreground"}`}>
+                      {resolvedMeter ?? (form.roomNo ? "No meter assigned" : "Auto-filled from room")}
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              <Field icon={ShieldCheck} type="tel" label="Guardian's phone" placeholder="+233 24 000 0000" value={form.guardianPhone} onChange={upd("guardianPhone")} required />
 
               <div className="rounded-2xl border border-border bg-white/60 p-4">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -116,7 +222,10 @@ function Onboarding() {
                 Continue <ArrowRight className="h-4 w-4" />
               </button>
             </form>
-          ) : (
+          )}
+
+          {/* ── STEP 2: Policy ── */}
+          {step === 2 && (
             <div className="space-y-5">
               <div className="flex items-center gap-3">
                 <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">
@@ -124,7 +233,7 @@ function Onboarding() {
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold">Hostel guidelines & code of conduct</h2>
-                  <p className="text-sm text-muted-foreground">Please read carefully before continuing.</p>
+                  <p className="text-sm text-muted-foreground">Read carefully — acceptance is mandatory to proceed.</p>
                 </div>
               </div>
 
@@ -154,11 +263,63 @@ function Onboarding() {
                   className="inline-flex items-center gap-2 rounded-2xl bg-secondary px-4 py-3 text-sm font-medium">
                   <ArrowLeft className="h-4 w-4" /> Back
                 </button>
-                <button onClick={finish} disabled={!accepted}
+                <button onClick={acceptPolicy} disabled={!accepted || createStudent.isPending}
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-soft transition disabled:cursor-not-allowed disabled:opacity-50">
-                  Accept & enter portal <ArrowRight className="h-4 w-4" />
+                  {createStudent.isPending
+                    ? <><Loader2 className="h-4 w-4 animate-spin" /> Creating account…</>
+                    : <>Accept & continue <ArrowRight className="h-4 w-4" /></>}
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* ── STEP 3: Payment ── */}
+          {step === 3 && (
+            <div className="space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">
+                  <CreditCard className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold">Pay registration fee</h2>
+                  <p className="text-sm text-muted-foreground">Secure payment via Paystack. You'll get an SMS confirmation.</p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-white/70 p-5 space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Student</span>
+                  <span className="font-semibold">{form.fullName}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Room</span>
+                  <span className="font-semibold">{form.roomNo}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Meter</span>
+                  <span className="font-semibold">{resolvedMeter ?? "—"}</span>
+                </div>
+                <div className="border-t border-border pt-3 flex items-center justify-between">
+                  <span className="text-muted-foreground">Registration fee</span>
+                  <span className="text-xl font-bold text-primary">GHS {settings?.registration_fee?.toLocaleString() ?? "—"}</span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 text-xs text-amber-800">
+                Payment is processed securely by Paystack. You will be redirected back here after payment and an SMS confirmation will be sent to <strong>{form.phone}</strong>.
+              </div>
+
+              <button onClick={payNow} disabled={initPayment.isPending || !settings}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-soft transition disabled:opacity-50 hover:opacity-95">
+                {initPayment.isPending
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Redirecting to Paystack…</>
+                  : <><CreditCard className="h-4 w-4" /> Pay GHS {settings?.registration_fee?.toLocaleString() ?? "…"} now</>}
+              </button>
+
+              <button onClick={() => navigate({ to: "/portal" })}
+                className="w-full rounded-2xl border border-border bg-white/60 py-3 text-sm text-muted-foreground hover:bg-white/80">
+                Skip for now — pay later from portal
+              </button>
             </div>
           )}
         </div>
@@ -171,44 +332,31 @@ function Onboarding() {
   );
 }
 
-function StepDot({ n, active, done, label }: { n: number; active: boolean; done: boolean; label: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div className={`grid h-8 w-8 place-items-center rounded-full text-xs font-bold transition ${active ? "bg-white text-primary shadow-soft" : "bg-white/30 text-white"}`}>
-        {done ? <CheckCircle2 className="h-4 w-4" /> : n}
-      </div>
-      <span className="hidden text-sm font-medium text-white sm:inline">{label}</span>
-    </div>
-  );
-}
+/* ── Shared field components ── */
 
-function Field({
-  icon: Icon, label, ...props
-}: { icon: typeof User; label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+function Field({ icon: Icon, label, ...props }: { icon: typeof User; label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-medium text-foreground">{label}</span>
       <div className="relative">
         <Icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input {...props}
-          className="w-full rounded-2xl border border-border bg-white/80 py-3 pl-10 pr-4 text-sm outline-none ring-primary/30 focus:ring-2" />
+        <input {...props} className="w-full rounded-2xl border border-border bg-white/80 py-3 pl-10 pr-4 text-sm outline-none ring-primary/30 focus:ring-2" />
       </div>
     </label>
   );
 }
 
-function SelectField({
-  icon: Icon, label, options, ...props
-}: { icon: typeof User; label: string; options: string[] } & React.SelectHTMLAttributes<HTMLSelectElement>) {
+function SelectField({ icon: Icon, label, options, placeholder, ...props }: {
+  icon: typeof User; label: string; options: { value: string; label: string }[]; placeholder?: string;
+} & React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-medium text-foreground">{label}</span>
       <div className="relative">
         <Icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <select {...props}
-          className="w-full appearance-none rounded-2xl border border-border bg-white/80 py-3 pl-10 pr-4 text-sm outline-none ring-primary/30 focus:ring-2">
-          <option value="">Select level</option>
-          {options.map((o) => <option key={o} value={o}>Level {o}</option>)}
+        <select {...props} className="w-full appearance-none rounded-2xl border border-border bg-white/80 py-3 pl-10 pr-4 text-sm outline-none ring-primary/30 focus:ring-2">
+          {placeholder && <option value="">{placeholder}</option>}
+          {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
     </label>
@@ -222,6 +370,6 @@ const GUIDELINES = [
   { title: "Fire & safety compliance", body: "No cooking appliances, candles, or smoking in rooms. Know your nearest fire exit." },
   { title: "Respect & zero tolerance for harassment", body: "Discrimination, bullying, or harassment of any kind will lead to immediate review." },
   { title: "Timely fee payments", body: "Rent and utilities must be settled by the posted due dates. Late fees apply after grace periods." },
-  { title: "Report issues promptly", body: "Use the Maintenance tab for plumbing, electrical, Wi-Fi or any safety concerns." },
-  { title: "Emergency contact awareness", body: "Memorize the 24/7 hostel security line: +233 20 000 0001. In medical emergencies, call +233 20 000 0002." },
+  { title: "Report issues promptly", body: "Contact management for plumbing, electrical, Wi-Fi or any safety concerns." },
+  { title: "Emergency contact awareness", body: "Memorize the 24/7 hostel security line. In medical emergencies, call the posted emergency numbers." },
 ];
