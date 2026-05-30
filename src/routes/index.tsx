@@ -38,6 +38,14 @@ function Login() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (role === "student") {
+      const onboardedId = (() => {
+        try { const raw = localStorage.getItem("sme_student_profile"); return raw ? JSON.parse(raw)?.id ?? null : null; } catch { return null; }
+      })();
+      const students = getState().students;
+      const match = onboardedId ? students.find((s) => s.id === onboardedId) : null;
+      actions.setCurrentStudent(match?.id ?? students[0]?.id ?? null);
+    }
     navigate({ to: role === "admin" ? "/admin" : "/portal" });
   }
 
