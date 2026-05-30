@@ -17,6 +17,23 @@ export const Route = createFileRoute("/")({
 function Login() {
   const navigate = useNavigate();
   const [role, setRole] = useState<"student" | "admin">("student");
+  const [hasOnboarded, setHasOnboarded] = useState<boolean | null>(null);
+  const [studentName, setStudentName] = useState<string>("");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("sme_student_profile");
+      if (raw) {
+        const p = JSON.parse(raw);
+        setHasOnboarded(true);
+        setStudentName(p?.fullName?.split(" ")?.[0] ?? "");
+      } else {
+        setHasOnboarded(false);
+      }
+    } catch {
+      setHasOnboarded(false);
+    }
+  }, []);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
