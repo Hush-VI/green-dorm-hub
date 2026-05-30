@@ -104,6 +104,15 @@ function Login() {
                 </a>
               </div>
             </form>
+
+            {role === "student" && (
+              <div className="mt-5 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-3 text-center text-xs">
+                New here?{" "}
+                <Link to="/onboarding" className="font-semibold text-primary hover:underline">
+                  Onboard as a student →
+                </Link>
+              </div>
+            )}
           </div>
 
           <p className="mt-4 text-center text-xs text-white/80 drop-shadow">
