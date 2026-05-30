@@ -1,0 +1,100 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Phone, Mail, MapPin, Clock, AlertTriangle, MessageCircle, ArrowLeft } from "lucide-react";
+import logo from "@/assets/logo.jpg";
+
+export const Route = createFileRoute("/contact")({
+  head: () => ({
+    meta: [
+      { title: "Contact & Emergency — SME Hostels" },
+      { name: "description", content: "Reach SME Hostels reception, security, and emergency contacts 24/7." },
+    ],
+  }),
+  component: Contact,
+});
+
+const emergency = [
+  { label: "Hostel Security (24/7)", value: "+233 20 000 0001", href: "tel:+233200000001", urgent: true },
+  { label: "Medical / First Aid", value: "+233 20 000 0002", href: "tel:+233200000002", urgent: true },
+  { label: "Fire Service", value: "192", href: "tel:192", urgent: true },
+  { label: "Police", value: "191", href: "tel:191", urgent: true },
+];
+
+const general = [
+  { icon: Phone, label: "Reception", value: "+233 30 000 0000", href: "tel:+233300000000" },
+  { icon: Mail, label: "Email", value: "hello@smehostels.com", href: "mailto:hello@smehostels.com" },
+  { icon: MessageCircle, label: "WhatsApp", value: "+233 55 000 0000", href: "https://wa.me/233550000000" },
+  { icon: MapPin, label: "Address", value: "SME Hostels, University Road, Accra, Ghana" },
+  { icon: Clock, label: "Office Hours", value: "Mon–Sat · 8:00 AM – 8:00 PM" },
+];
+
+function Contact() {
+  return (
+    <div className="min-h-screen bg-gradient-soft">
+      <header className="border-b border-border bg-white/70 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+          <Link to="/" className="flex items-center gap-3">
+            <img src={logo} alt="SME Hostels" className="h-10 w-auto" />
+          </Link>
+          <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary">
+            <ArrowLeft className="h-4 w-4" /> Back to sign in
+          </Link>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-4 py-10">
+        <div className="animate-slide-up">
+          <h1 className="text-4xl font-bold tracking-tight">Get in touch</h1>
+          <p className="mt-2 max-w-2xl text-muted-foreground">
+            Our team is available around the clock. For life-threatening emergencies, call the urgent lines below immediately.
+          </p>
+        </div>
+
+        <section className="mt-8 animate-scale-in">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-destructive/10 px-3 py-1 text-xs font-semibold text-destructive">
+            <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive/60" /><span className="relative inline-flex h-2 w-2 rounded-full bg-destructive" /></span>
+            Emergency contacts · 24/7
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {emergency.map((c) => (
+              <a key={c.label} href={c.href}
+                className="squircle group flex flex-col gap-2 border border-destructive/20 bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-glass">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <div className="text-xs font-medium text-muted-foreground">{c.label}</div>
+                <div className="text-lg font-semibold text-foreground group-hover:text-destructive">{c.value}</div>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-10 grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 squircle bg-white p-6 shadow-soft">
+            <h2 className="text-lg font-semibold">Send us a message</h2>
+            <p className="mt-1 text-sm text-muted-foreground">We typically reply within 2 hours during office hours.</p>
+            <form onSubmit={(e) => { e.preventDefault(); alert("Thanks! We'll be in touch shortly."); }} className="mt-5 grid gap-4 sm:grid-cols-2">
+              <input required placeholder="Full name" className="rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+              <input required type="email" placeholder="Email" className="rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+              <input placeholder="Phone (optional)" className="rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 sm:col-span-2" />
+              <textarea required rows={5} placeholder="How can we help?" className="rounded-2xl border border-border bg-secondary/40 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 sm:col-span-2" />
+              <button className="sm:col-span-2 rounded-2xl bg-gradient-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-soft hover:opacity-95">Send message</button>
+            </form>
+          </div>
+
+          <div className="squircle bg-white p-6 shadow-soft">
+            <h2 className="text-lg font-semibold">Reach us directly</h2>
+            <ul className="mt-4 space-y-4">
+              {general.map((c) => (
+                <li key={c.label} className="flex items-start gap-3">
+                  <div className="grid h-10 w-10 place-items-center rounded-2xl bg-primary/10 text-primary"><c.icon className="h-5 w-5" /></div>
+                  <div>
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">{c.label}</div>
+                    {c.href ? <a href={c.href} className="text-sm font-medium hover:text-primary">{c.value}</a> : <div className="text-sm font-medium">{c.value}</div>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
