@@ -169,10 +169,11 @@ function Dashboard() {
           <div className="mt-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={roomMix} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={4}>
+                <Pie data={roomMix} dataKey="value" nameKey="name" cx="50%" cy="45%" innerRadius={45} outerRadius={75} paddingAngle={4}>
                   {roomMix.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
-                <Legend />
+                <Tooltip contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 8px 32px -8px rgba(0,0,0,.15)" }} />
+                <Legend verticalAlign="bottom" iconType="circle" height={28} />
               </PieChart>
             </ResponsiveContainer>
           </div>
