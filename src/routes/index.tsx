@@ -125,7 +125,7 @@ function Login() {
             {role === "student" && hasOnboarded === false && (
               <Link
                 to="/onboarding"
-                className="group relative mt-5 flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-gradient-primary p-4 text-left text-primary-foreground shadow-soft ring-2 ring-primary/40 ring-offset-2 ring-offset-white/40 transition hover:scale-[1.01] active:scale-[.99] animate-pulse-slow"
+                className="group relative mt-5 flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-gradient-primary p-4 text-left text-primary-foreground shadow-soft ring-2 ring-primary/40 ring-offset-2 ring-offset-white/40 transition hover:scale-[1.01] active:scale-[.99]"
               >
                 <span className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/20 blur-2xl" />
                 <div className="flex items-start gap-3">
