@@ -225,6 +225,7 @@ function StudentsSection() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
