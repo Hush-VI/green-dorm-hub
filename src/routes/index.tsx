@@ -122,12 +122,38 @@ function Login() {
               </div>
             </form>
 
-            {role === "student" && (
-              <div className="mt-5 rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-3 text-center text-xs">
-                New here?{" "}
-                <Link to="/onboarding" className="font-semibold text-primary hover:underline">
-                  Onboard as a student →
-                </Link>
+            {role === "student" && hasOnboarded === false && (
+              <Link
+                to="/onboarding"
+                className="group relative mt-5 flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-gradient-primary p-4 text-left text-primary-foreground shadow-soft ring-2 ring-primary/40 ring-offset-2 ring-offset-white/40 transition hover:scale-[1.01] active:scale-[.99] animate-pulse-slow"
+              >
+                <span className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/20 blur-2xl" />
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      New student? Start here
+                      <span className="rounded-full bg-white/25 px-2 py-0.5 text-[10px] uppercase tracking-wide">Required</span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-white/90">
+                      Set up your profile in under 2 minutes to access the portal.
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
+              </Link>
+            )}
+
+            {role === "student" && hasOnboarded === true && (
+              <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-3 text-xs">
+                <div className="flex items-center gap-2 text-foreground/80">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <span>
+                    Welcome back{studentName ? `, ${studentName}` : ""} · profile on this device
+                  </span>
+                </div>
               </div>
             )}
           </div>
