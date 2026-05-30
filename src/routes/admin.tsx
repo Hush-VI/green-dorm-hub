@@ -275,6 +275,7 @@ function PaymentsSection() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
