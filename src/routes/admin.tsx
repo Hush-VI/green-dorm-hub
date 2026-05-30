@@ -167,7 +167,7 @@ function Dashboard() {
           <h2 className="font-semibold">Room mix</h2>
           <p className="text-xs text-muted-foreground">By type</p>
           <div className="mt-4 h-64">
-            <ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={roomMix} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={4}>
                   {roomMix.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
@@ -182,13 +182,13 @@ function Dashboard() {
       <div className="squircle bg-white p-5 shadow-soft">
         <h2 className="font-semibold">Occupancy by block</h2>
         <div className="mt-4 h-64">
-          <ResponsiveContainer>
-            <BarChart data={occByBlock}>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0.015 145)" />
-              <XAxis dataKey="name" stroke="oklch(0.5 0.02 150)" fontSize={12} />
-              <YAxis stroke="oklch(0.5 0.02 150)" fontSize={12} />
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={occByBlock} margin={{ left: -20, right: 8, top: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+              <XAxis dataKey="name" stroke={CHART_AXIS} fontSize={12} />
+              <YAxis stroke={CHART_AXIS} fontSize={12} />
               <Tooltip contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 8px 32px -8px rgba(0,0,0,.15)" }} />
-              <Bar dataKey="v" fill="oklch(0.68 0.17 145)" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="v" fill={CHART_PRIMARY} radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
