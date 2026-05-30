@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Lock, Mail, ShieldCheck, GraduationCap, Phone, Sparkles, CheckCircle2, ArrowRight } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import building from "@/assets/building.jpg";
+import { actions, getState } from "@/lib/hostel-store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
