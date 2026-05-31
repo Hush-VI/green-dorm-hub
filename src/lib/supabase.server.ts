@@ -1,20 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "./database.types";
 
-// Server-only Supabase client using the service role key (bypasses RLS).
-// Never import this file from client code — the .server.ts suffix ensures
-// Vite tree-shakes it from the browser bundle.
 export function getSupabaseAdmin() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !key) {
-    throw new Error(
-      "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables.",
-    );
-  }
+  if (!url) throw new Error("Missing SUPABASE_URL. Check Cloudflare Workers → Settings → Variables.");
+  if (!key) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY. Check Cloudflare Workers → Settings → Variables.");
 
-  return createClient<Database>(url, key, {
+  return createClient(url, key, {
     auth: { persistSession: false },
   });
 }

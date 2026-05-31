@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getSupabaseAdmin } from "../supabase.server";
 import { hashPassword, verifyPassword } from "../crypto.server";
+import { getEnv } from "../env.server";
 
 // ── Admin login ───────────────────────────────────────────────────────────────
 
@@ -55,7 +56,7 @@ export const createFirstAdmin = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    const setupKey = process.env.ADMIN_SETUP_KEY;
+    const setupKey = getEnv().ADMIN_SETUP_KEY;
     if (!setupKey || data.setupKey !== setupKey) {
       throw new Error("Invalid setup key.");
     }

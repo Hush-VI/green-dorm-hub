@@ -5,8 +5,10 @@ import { sendSms } from "../mnotify.server";
 
 // ── Paystack helpers ──────────────────────────────────────────────────────────
 
+import { getEnv } from "../env.server";
+
 function getPaystackKey() {
-  const key = process.env.PAYSTACK_SECRET_KEY;
+  const key = getEnv().PAYSTACK_SECRET_KEY;
   if (!key) throw new Error("Missing PAYSTACK_SECRET_KEY environment variable.");
   return key;
 }
