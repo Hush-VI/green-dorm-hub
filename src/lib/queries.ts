@@ -374,3 +374,94 @@ export function useLogElectricityTopup() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+import { loginAdmin, loginStudent, createFirstAdmin, checkAdminExists, registerStudent, resetStudentPassword } from "./api/auth.functions";
+
+export function useLoginAdmin() {
+  return useMutation({
+    mutationFn: (data: { username: string; password: string }) =>
+      loginAdmin({ data }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useLoginStudent() {
+  return useMutation({
+    mutationFn: (data: { username: string; password: string }) =>
+      loginStudent({ data }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useCreateFirstAdmin() {
+  return useMutation({
+    mutationFn: (data: { username: string; password: string; fullName: string; setupKey: string }) =>
+      createFirstAdmin({ data }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useCheckAdminExists() {
+  return useQuery({
+    queryKey: ["admin-exists"],
+    queryFn: () => checkAdminExists(),
+  });
+}
+
+// ── Room Pricing ──────────────────────────────────────────────────────────────
+
+import { getRoomPricing, upsertRoomPricing, getHostelFeeForRoom } from "./api/pricing.functions";
+
+export const QK_PRICING = {
+  all: ["room-pricing"] as const,
+  forRoom: (roomNo: string) => ["room-pricing", roomNo] as const,
+};
+
+export function useRoomPricing() {
+  return useQuery({
+    queryKey: QK_PRICING.all,
+    queryFn: () => getRoomPricing(),
+  });
+}
+
+export function useUpsertRoomPricing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { capacity: number; hostel_fee: number }[]) =>
+      upsertRoomPricing({ data }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: QK_PRICING.all });
+      toast.success("Room pricing updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useHostelFeeForRoom(roomNo: string) {
+  return useQuery({
+    queryKey: QK_PRICING.forRoom(roomNo),
+    queryFn: () => getHostelFeeForRoom({ data: { roomNo } }),
+    enabled: !!roomNo,
+  });
+}
+
+export function useRegisterStudent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof registerStudent>[0]["data"]) =>
+      registerStudent({ data }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.students }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useResetStudentPassword() {
+  return useMutation({
+    mutationFn: (data: { studentId: string; newPassword: string }) =>
+      resetStudentPassword({ data }),
+    onSuccess: () => toast.success("Password reset successfully"),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}

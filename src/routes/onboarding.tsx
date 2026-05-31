@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import building from "@/assets/building.jpg";
-import { useCreateStudent, useRooms, useMeters, useSettings, useInitPayment } from "@/lib/queries";
+import { useRegisterStudent, useRooms, useMeters, useSettings, useInitPayment, useHostelFeeForRoom } from "@/lib/queries";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -41,8 +41,12 @@ function Onboarding() {
   const { data: rooms = [], isLoading: roomsLoading } = useRooms();
   const { data: meters = [] } = useMeters();
   const { data: settings } = useSettings();
-  const createStudent = useCreateStudent();
+  const { data: roomFeeData } = useHostelFeeForRoom(form.roomNo);
+  const createStudent = useRegisterStudent();
   const initPayment = useInitPayment();
+
+  // Registration fee is flat; hostel fee depends on room capacity
+  const hostelFee = roomFeeData?.hostelFee ?? settings?.hostel_fee ?? 0;
 
   const upd = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -74,14 +78,9 @@ function Onboarding() {
         level: form.level,
         room_no: form.roomNo || null,
         meter_no: resolvedMeter,
-        guardian_name: "",
         guardian_phone: form.guardianPhone,
         username: form.username,
-        reg_status: "unpaid",
-        reg_paid: 0,
-        hostel_paid: 0,
-        check_status: "out",
-        policy_accepted: true,
+        password: form.password,
         accepted_at: new Date().toISOString(),
       },
       {
@@ -299,9 +298,17 @@ function Onboarding() {
                   <span className="text-muted-foreground">Meter</span>
                   <span className="font-semibold">{resolvedMeter ?? "—"}</span>
                 </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Room capacity</span>
+                  <span className="font-semibold">{roomFeeData?.capacity ?? "—"}-person room</span>
+                </div>
                 <div className="border-t border-border pt-3 flex items-center justify-between">
-                  <span className="text-muted-foreground">Registration fee</span>
+                  <span className="text-muted-foreground">Registration fee (pay now)</span>
                   <span className="text-xl font-bold text-primary">GHS {settings?.registration_fee?.toLocaleString() ?? "—"}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>Hostel fee (pay later)</span>
+                  <span className="font-semibold">GHS {hostelFee.toLocaleString()}</span>
                 </div>
               </div>
 

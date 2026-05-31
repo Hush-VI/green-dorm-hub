@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   LayoutDashboard, Users, DoorOpen, Zap, Wallet, Building2, ClipboardList,
   ShoppingBag, MessageSquare, BarChart3, Settings as SettingsIcon, LogOut,
   ChevronLeft, ChevronRight, Bell, Search, Plus, Edit3, Trash2, X, Save,
   CheckCircle2, XCircle, AlertTriangle, Copy, Check, Send, Image as ImageIcon,
-  Video, FileText, ArrowRight, MoreHorizontal,
+  Video, FileText, ArrowRight, MoreHorizontal, Lock,
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar,
@@ -25,6 +25,8 @@ import {
   useSmsMessages, useSendSms, useResolveRecipients,
   useSettings, useUpdateSettings,
   useElectricityLogs,
+  useRoomPricing, useUpsertRoomPricing,
+  useResetStudentPassword,
 } from "@/lib/queries";
 
 export const Route = createFileRoute("/admin")({
@@ -268,6 +270,7 @@ function StudentsPage() {
   const [edit, setEdit] = useState<StudentRow | null>(null);
   const [adding, setAdding] = useState(false);
   const [del, setDel] = useState<StudentRow | null>(null);
+  const [resetPw, setResetPw] = useState<StudentRow | null>(null);
 
   const filtered = students.filter((s) => {
     const match = (s.full_name + s.id + s.course + (s.room_no ?? "")).toLowerCase().includes(q.toLowerCase());
@@ -313,6 +316,7 @@ function StudentsPage() {
               </div>
               <div className="flex flex-col gap-1">
                 <button onClick={() => setEdit(s)} className="grid h-8 w-8 place-items-center rounded-lg bg-muted hover:bg-primary/10"><Edit3 className="h-3.5 w-3.5" /></button>
+                <button onClick={() => setResetPw(s)} className="grid h-8 w-8 place-items-center rounded-lg bg-muted hover:bg-amber-100 text-amber-700" title="Reset password"><Lock className="h-3.5 w-3.5" /></button>
                 <button onClick={() => setDel(s)} className="grid h-8 w-8 place-items-center rounded-lg bg-muted hover:bg-destructive/10 text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
             </div>
@@ -331,6 +335,7 @@ function StudentsPage() {
       )}
       {del && <ConfirmModal title={`Delete ${del.full_name}?`} body="This cannot be undone."
         onCancel={() => setDel(null)} onConfirm={() => { deleteMut.mutate(del.id); setDel(null); }} />}
+      {resetPw && <ResetPasswordModal student={resetPw} onClose={() => setResetPw(null)} />}
     </div>
   );
 }
@@ -376,6 +381,37 @@ function StudentModal({ initial, rooms, meters, onClose, onSave }: {
         <button onClick={onClose} className="rounded-full border border-border bg-white px-4 py-2 text-sm">Cancel</button>
         <button onClick={() => onSave(f)} className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Save</button>
       </div>
+    </Modal>
+  );
+}
+
+function ResetPasswordModal({ student, onClose }: { student: StudentRow; onClose: () => void }) {
+  const [newPassword, setNewPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const resetMut = useResetStudentPassword();
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (newPassword !== confirm) { alert("Passwords do not match."); return; }
+    resetMut.mutate({ studentId: student.id, newPassword }, { onSuccess: onClose });
+  }
+
+  return (
+    <Modal title={`Reset password — ${student.full_name}`} onClose={onClose}>
+      <div className="mb-3 rounded-2xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800">
+        This will overwrite the student's current password. They must use the new password to sign in.
+      </div>
+      <form onSubmit={submit} className="space-y-3">
+        <FormField label="New password (min 6 characters)" type="password" value={newPassword} onChange={setNewPassword} />
+        <FormField label="Confirm new password" type="password" value={confirm} onChange={setConfirm} />
+        <div className="mt-5 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-full border border-border bg-white px-4 py-2 text-sm">Cancel</button>
+          <button type="submit" disabled={resetMut.isPending || newPassword.length < 6}
+            className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
+            {resetMut.isPending ? "Saving…" : "Reset password"}
+          </button>
+        </div>
+      </form>
     </Modal>
   );
 }
@@ -1152,15 +1188,35 @@ function ReportsPage() {
 
 function SettingsPage() {
   const { data: settings } = useSettings();
+  const { data: pricing = [] } = useRoomPricing();
   const updateMut = useUpdateSettings();
-  const [f, setF] = useState<any>(null);
+  const upsertPricingMut = useUpsertRoomPricing();
 
-  // Initialise form once settings load
-  if (settings && !f) {
-    setF({ ...settings });
-  }
+  const [f, setF] = useState<any>(null);
+  const [pricingForm, setPricingForm] = useState<{ capacity: number; hostel_fee: number }[]>([]);
+
+  // Sync form when settings load or change
+  useEffect(() => {
+    if (settings) setF({ ...settings });
+  }, [settings]);
+
+  // Sync pricing form when pricing loads
+  useEffect(() => {
+    if (pricing.length > 0) {
+      setPricingForm(pricing.map((p) => ({ capacity: p.capacity, hostel_fee: p.hostel_fee })));
+    }
+  }, [pricing]);
 
   if (!f) return <div className="py-10 text-center text-sm text-muted-foreground">Loading settings…</div>;
+
+  function addPricingTier() {
+    const maxCap = pricingForm.length > 0 ? Math.max(...pricingForm.map((p) => p.capacity)) : 0;
+    setPricingForm([...pricingForm, { capacity: maxCap + 1, hostel_fee: 0 }]);
+  }
+
+  function removePricingTier(capacity: number) {
+    setPricingForm(pricingForm.filter((p) => p.capacity !== capacity));
+  }
 
   return (
     <div className="space-y-4">
@@ -1171,33 +1227,81 @@ function SettingsPage() {
             <Save className="h-3.5 w-3.5" /> {updateMut.isPending ? "Saving…" : "Save Changes"}
           </button>
         } />
+
       <SectionPanel title="Hostel Info">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <FormField label="Hostel Name" value={f.hostel_name} onChange={(v) => setF({ ...f, hostel_name: v })} />
-          <FormField label="Address" value={f.address} onChange={(v) => setF({ ...f, address: v })} />
-          <FormField label="Contact Phone" value={f.contact_phone} onChange={(v) => setF({ ...f, contact_phone: v })} />
-          <FormField label="WhatsApp" value={f.contact_whatsapp} onChange={(v) => setF({ ...f, contact_whatsapp: v })} />
-          <FormField label="Email" value={f.email} onChange={(v) => setF({ ...f, email: v })} />
+          <FormField label="Hostel Name" value={f.hostel_name ?? ""} onChange={(v) => setF({ ...f, hostel_name: v })} />
+          <FormField label="Address" value={f.address ?? ""} onChange={(v) => setF({ ...f, address: v })} />
+          <FormField label="Contact Phone" value={f.contact_phone ?? ""} onChange={(v) => setF({ ...f, contact_phone: v })} />
+          <FormField label="WhatsApp" value={f.contact_whatsapp ?? ""} onChange={(v) => setF({ ...f, contact_whatsapp: v })} />
+          <FormField label="Email" value={f.email ?? ""} onChange={(v) => setF({ ...f, email: v })} />
         </div>
       </SectionPanel>
+
       <SectionPanel title="Fee Settings">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <FormField label="Registration Fee (GHS)" type="number" value={String(f.registration_fee)} onChange={(v) => setF({ ...f, registration_fee: Number(v) })} />
-          <FormField label="Hostel Fee (GHS)" type="number" value={String(f.hostel_fee)} onChange={(v) => setF({ ...f, hostel_fee: Number(v) })} />
+          <FormField label="Registration Fee (GHS) — same for all students" type="number" value={String(f.registration_fee ?? 0)} onChange={(v) => setF({ ...f, registration_fee: Number(v) })} />
+        </div>
+        <div className="mt-1 text-xs text-muted-foreground">Hostel fees are set per room capacity below.</div>
+      </SectionPanel>
+
+      {/* Room-based hostel fee pricing */}
+      <SectionPanel title="Hostel Fee by Room Capacity">
+        <div className="mb-3 text-xs text-muted-foreground">
+          Set the annual hostel fee for each room size. Students are charged based on how many people share their room.
+        </div>
+        <div className="space-y-2">
+          {pricingForm.map((tier, i) => (
+            <div key={tier.capacity} className="flex items-center gap-3">
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-medium">{tier.capacity}-person room</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">GHS</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={tier.hostel_fee}
+                    onChange={(e) => {
+                      const updated = [...pricingForm];
+                      updated[i] = { ...tier, hostel_fee: Number(e.target.value) };
+                      setPricingForm(updated);
+                    }}
+                    className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+              </div>
+              <button onClick={() => removePricingTier(tier.capacity)}
+                className="mt-5 grid h-9 w-9 place-items-center rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 flex gap-2">
+          <button onClick={addPricingTier}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium hover:bg-muted/40">
+            <Plus className="h-3.5 w-3.5" /> Add tier
+          </button>
+          <button onClick={() => upsertPricingMut.mutate(pricingForm)} disabled={upsertPricingMut.isPending}
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">
+            <Save className="h-3.5 w-3.5" /> {upsertPricingMut.isPending ? "Saving…" : "Save pricing"}
+          </button>
         </div>
       </SectionPanel>
+
       <SectionPanel title="Bank & MoMo">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <FormField label="Bank Name" value={f.bank_name} onChange={(v) => setF({ ...f, bank_name: v })} />
-          <FormField label="Account Name" value={f.account_name} onChange={(v) => setF({ ...f, account_name: v })} />
-          <FormField label="Account Number" value={f.account_number} onChange={(v) => setF({ ...f, account_number: v })} />
-          <FormField label="Branch" value={f.branch} onChange={(v) => setF({ ...f, branch: v })} />
-          <FormField label="MoMo Number" value={f.momo_number} onChange={(v) => setF({ ...f, momo_number: v })} />
-          <FormField label="MoMo Name" value={f.momo_name} onChange={(v) => setF({ ...f, momo_name: v })} />
+          <FormField label="Bank Name" value={f.bank_name ?? ""} onChange={(v) => setF({ ...f, bank_name: v })} />
+          <FormField label="Account Name" value={f.account_name ?? ""} onChange={(v) => setF({ ...f, account_name: v })} />
+          <FormField label="Account Number" value={f.account_number ?? ""} onChange={(v) => setF({ ...f, account_number: v })} />
+          <FormField label="Branch" value={f.branch ?? ""} onChange={(v) => setF({ ...f, branch: v })} />
+          <FormField label="MoMo Number" value={f.momo_number ?? ""} onChange={(v) => setF({ ...f, momo_number: v })} />
+          <FormField label="MoMo Name" value={f.momo_name ?? ""} onChange={(v) => setF({ ...f, momo_name: v })} />
         </div>
       </SectionPanel>
+
       <SectionPanel title="SMS">
-        <FormField label="Sender ID" value={f.sms_sender_id} onChange={(v) => setF({ ...f, sms_sender_id: v })} />
+        <FormField label="Sender ID" value={f.sms_sender_id ?? ""} onChange={(v) => setF({ ...f, sms_sender_id: v })} />
         <div className="mt-2 text-xs text-muted-foreground">API key is stored as an environment variable and cannot be edited here.</div>
       </SectionPanel>
     </div>

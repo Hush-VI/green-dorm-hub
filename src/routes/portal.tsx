@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Home, User, Wallet, ShoppingBag, MoreHorizontal, LogOut, Bell,
   CheckCircle2, XCircle, ArrowRight, Copy, Check, Plus, Minus, Trash2,
@@ -17,6 +17,7 @@ import {
   useStoreItems, useOrders, usePlaceOrder,
   useMeters, useStudents,
   useElectricityLogs, useLogElectricityTopup,
+  useHostelFeeForRoom,
 } from "@/lib/queries";
 
 export const Route = createFileRoute("/portal")({
@@ -43,10 +44,21 @@ function Portal() {
   const { data: settings } = useSettings();
   const acceptPolicyMut = useAcceptPolicy();
 
-  if (!currentId) {
-    nav({ to: "/" });
-    return null;
-  }
+  // Redirect to login if no session — must be in useEffect, not render body
+  useEffect(() => {
+    if (!currentId) nav({ to: "/" });
+  }, [currentId]);
+
+  // If student was deleted from DB, clear session and redirect
+  useEffect(() => {
+    if (!isLoading && currentId && !student) {
+      sessionStorage.removeItem("sme_student_id");
+      localStorage.removeItem("sme_student_profile");
+      nav({ to: "/" });
+    }
+  }, [isLoading, currentId, student]);
+
+  if (!currentId) return null;
 
   if (isLoading) {
     return <div className="grid min-h-screen place-items-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
@@ -130,6 +142,7 @@ function HomeTab({ studentId, onNavTab, onSub }: { studentId: string; onNavTab: 
   const { data: settings } = useSettings();
   const { data: orders = [] } = useOrders(studentId);
   const { data: allStudents = [] } = useStudents();
+  const { data: roomFeeData } = useHostelFeeForRoom(s?.room_no ?? "");
   const checkIn = useCheckIn();
   const checkOut = useCheckOut();
   const [confirm, setConfirm] = useState<"in" | "out" | null>(null);
@@ -137,7 +150,7 @@ function HomeTab({ studentId, onNavTab, onSub }: { studentId: string; onNavTab: 
   if (!s || !settings) return <div className="py-10 text-center text-sm text-muted-foreground">Loading…</div>;
 
   const regFee = settings.registration_fee;
-  const hostelFee = settings.hostel_fee;
+  const hostelFee = roomFeeData?.hostelFee ?? settings.hostel_fee;
   const regPct = Math.min(100, (s.reg_paid / regFee) * 100);
   const hostelPct = Math.min(100, (s.hostel_paid / hostelFee) * 100);
   const pendingOrders = orders.filter((o: any) => o.status !== "delivered" && o.status !== "cancelled").length;
@@ -275,14 +288,16 @@ function FeesTab({ studentId }: { studentId: string }) {
   const { data: s } = useStudent(studentId);
   const { data: settings } = useSettings();
   const { data: payments = [] } = usePayments(studentId);
+  const { data: roomFeeData } = useHostelFeeForRoom(s?.room_no ?? "");
 
   if (!s || !settings) return null;
 
+  const hostelFee = roomFeeData?.hostelFee ?? settings.hostel_fee;
   const sorted = [...payments].sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime());
 
   return (
     <div className="space-y-4">
-      <FeeBreakdown title="Hostel Fee" paid={s.hostel_paid} total={settings.hostel_fee} accent="primary" />
+      <FeeBreakdown title="Hostel Fee" paid={s.hostel_paid} total={hostelFee} accent="primary" />
       <FeeBreakdown title="Registration Fee" paid={s.reg_paid} total={settings.registration_fee} accent="blue" />
 
       <div className="squircle bg-white p-5 shadow-soft">

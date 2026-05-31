@@ -21,6 +21,7 @@ const StudentSchema = z.object({
   hostel_paid: z.number().min(0),
   check_status: z.enum(["in", "out"]),
   policy_accepted: z.boolean().optional(),
+  accepted_at: z.string().nullable().optional(),
 });
 
 // ── Queries ───────────────────────────────────────────────────────────────────

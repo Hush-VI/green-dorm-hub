@@ -7,7 +7,7 @@ const SettingsPatchSchema = z.object({
   address: z.string().optional(),
   contact_phone: z.string().optional(),
   contact_whatsapp: z.string().optional(),
-  email: z.string().email().optional(),
+  email: z.string().email().optional().or(z.literal("")),
   bank_name: z.string().optional(),
   account_name: z.string().optional(),
   account_number: z.string().optional(),
