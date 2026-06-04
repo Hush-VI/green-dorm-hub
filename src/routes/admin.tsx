@@ -27,6 +27,7 @@ import {
   useElectricityLogs,
   useRoomPricing, useUpsertRoomPricing,
   useResetStudentPassword,
+  useTestSms,
 } from "@/lib/queries";
 
 export const Route = createFileRoute("/admin")({
@@ -983,8 +984,10 @@ function SmsPage() {
   const { data: sms = [] } = useSmsMessages();
   const { data: students = [] } = useStudents();
   const sendMut = useSendSms();
+  const testSmsMut = useTestSms();
   const [compose, setCompose] = useState(false);
   const [prefill, setPrefill] = useState<string | undefined>();
+  const [testPhone, setTestPhone] = useState("");
 
   return (
     <div className="space-y-4">
@@ -998,6 +1001,25 @@ function SmsPage() {
         <MiniStat label="Total Sent" value={sms.length} />
         <MiniStat label="Delivered" value={sms.filter((m) => m.status === "delivered").length} accent="primary" />
         <MiniStat label="This Month" value={sms.filter((m) => new Date(m.sent_at).getMonth() === new Date().getMonth()).length} />
+      </div>
+
+      {/* Test SMS */}
+      <div className="squircle bg-amber-50 border border-amber-200 p-4">
+        <div className="mb-2 text-sm font-semibold text-amber-900">Test SMS connection</div>
+        <div className="flex gap-2">
+          <input value={testPhone} onChange={(e) => setTestPhone(e.target.value)}
+            placeholder="Phone number e.g. 0241234567"
+            className="flex-1 rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+          <button onClick={() => testSmsMut.mutate(testPhone)} disabled={!testPhone || testSmsMut.isPending}
+            className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+            {testSmsMut.isPending ? "Sending…" : "Send test"}
+          </button>
+        </div>
+        {testSmsMut.data && (
+          <div className={`mt-2 rounded-xl p-2 text-xs ${testSmsMut.data.success ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
+            {testSmsMut.data.success ? `✓ Sent (code: ${testSmsMut.data.code})` : `✗ Failed: ${testSmsMut.data.error} (code: ${testSmsMut.data.code})`}
+          </div>
+        )}
       </div>
       <SectionPanel title="Quick Send Templates">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">

@@ -90,3 +90,16 @@ export const resolveSmsRecipients = createServerFn({ method: "POST" })
       phone: s.phone,
     }));
   });
+
+// ── Test SMS (admin use only) ─────────────────────────────────────────────────
+
+export const testSms = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ phone: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    const { sendSms } = await import("../mnotify.server");
+    const result = await sendSms({
+      to: data.phone,
+      message: "SME Hostels: This is a test message. If you received this, SMS is working correctly.",
+    });
+    return result;
+  });

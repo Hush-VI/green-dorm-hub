@@ -9,7 +9,7 @@ import { getStudents, getStudent, createStudent, updateStudent, deleteStudent, c
 import { getRooms, createRoom, updateRoom, deleteRoom, getMeters, createMeter, updateMeter, deleteMeter } from "./api/rooms.functions";
 import { getPayments, recordPayment } from "./api/payments.functions";
 import { getStoreItems, createStoreItem, updateStoreItem, deleteStoreItem, getOrders, placeOrder, updateOrderStatus, markOrderRead } from "./api/store.functions";
-import { getSmsMessages, sendSmsToStudents, resolveSmsRecipients } from "./api/sms.functions";
+import { getSmsMessages, sendSmsToStudents, resolveSmsRecipients, testSms } from "./api/sms.functions";
 import { getSettings, updateSettings } from "./api/settings.functions";
 
 // ── Query Keys ────────────────────────────────────────────────────────────────
@@ -462,6 +462,17 @@ export function useResetStudentPassword() {
     mutationFn: (data: { studentId: string; newPassword: string }) =>
       resetStudentPassword({ data }),
     onSuccess: () => toast.success("Password reset successfully"),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useTestSms() {
+  return useMutation({
+    mutationFn: (phone: string) => testSms({ data: { phone } }),
+    onSuccess: (result) => {
+      if (result.success) toast.success("SMS sent successfully!");
+      else toast.error(`SMS failed: ${result.error} (code: ${result.code})`);
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 }
