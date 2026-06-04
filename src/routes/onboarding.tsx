@@ -38,7 +38,7 @@ function Onboarding() {
   const [accepted, setAccepted] = useState(false);
   const [createdStudentId, setCreatedStudentId] = useState<string | null>(null);
 
-  const { data: rooms = [], isLoading: roomsLoading } = useRooms();
+  const { data: rooms = [], isLoading: roomsLoading, error: roomsError } = useRooms();
   const { data: meters = [] } = useMeters();
   const { data: settings } = useSettings();
   const { data: roomFeeData } = useHostelFeeForRoom(form.roomNo);
@@ -165,7 +165,9 @@ function Onboarding() {
                     <DoorOpen className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <select value={form.roomNo} onChange={upd("roomNo")} required
                       className="w-full appearance-none rounded-2xl border border-border bg-white/80 py-3 pl-10 pr-4 text-sm outline-none ring-primary/30 focus:ring-2">
-                      <option value="">{roomsLoading ? "Loading rooms…" : "Select your room"}</option>
+                      <option value="">
+                        {roomsLoading ? "Loading rooms…" : roomsError ? "Error loading rooms — check connection" : rooms.length === 0 ? "No rooms available — contact admin" : "Select your room"}
+                      </option>
                       {rooms
                         .filter((r: any) => r.status === "available")
                         .map((r: any) => (
