@@ -142,7 +142,6 @@ function HomeTab({ studentId, onNavTab, onSub }: { studentId: string; onNavTab: 
   const { data: settings } = useSettings();
   const { data: orders = [] } = useOrders(studentId);
   const { data: allStudents = [] } = useStudents();
-  const { data: roomFeeData } = useHostelFeeForRoom(s?.room_no ?? "");
   const checkIn = useCheckIn();
   const checkOut = useCheckOut();
   const [confirm, setConfirm] = useState<"in" | "out" | null>(null);
@@ -150,9 +149,7 @@ function HomeTab({ studentId, onNavTab, onSub }: { studentId: string; onNavTab: 
   if (!s || !settings) return <div className="py-10 text-center text-sm text-muted-foreground">Loading…</div>;
 
   const regFee = settings.registration_fee;
-  const hostelFee = roomFeeData?.hostelFee ?? settings.hostel_fee;
   const regPct = Math.min(100, (s.reg_paid / regFee) * 100);
-  const hostelPct = Math.min(100, (s.hostel_paid / hostelFee) * 100);
   const pendingOrders = orders.filter((o: any) => o.status !== "delivered" && o.status !== "cancelled").length;
   const meterRoomies = allStudents.filter((x: any) => x.meter_no === s.meter_no).length;
 
@@ -183,7 +180,6 @@ function HomeTab({ studentId, onNavTab, onSub }: { studentId: string; onNavTab: 
         <StatCard icon={CheckCircle2} label="Status" value={s.check_status === "in" ? "In" : "Out"} />
       </div>
 
-      <FeeProgressCard title="Hostel Fee" amount={s.hostel_paid} total={hostelFee} pct={hostelPct} accent="primary" ctaLabel="Pay Now" onCta={() => onNavTab("fees")} />
       <FeeProgressCard title="Registration Fee" amount={s.reg_paid} total={regFee} pct={regPct} accent="blue" ctaLabel="View Details" onCta={() => onNavTab("fees")} />
 
       <div className="grid grid-cols-2 gap-3">
@@ -297,7 +293,6 @@ function FeesTab({ studentId }: { studentId: string }) {
 
   return (
     <div className="space-y-4">
-      <FeeBreakdown title="Hostel Fee" paid={s.hostel_paid} total={hostelFee} accent="primary" />
       <FeeBreakdown title="Registration Fee" paid={s.reg_paid} total={settings.registration_fee} accent="blue" />
 
       <div className="squircle bg-white p-5 shadow-soft">

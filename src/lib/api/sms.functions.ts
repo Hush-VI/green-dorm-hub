@@ -49,8 +49,7 @@ export const sendSmsToStudents = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     if (!result.success) {
-      // Return the log entry but surface the error so the UI can show it
-      return { ...logged, mnotifyError: result.error };
+      return { ...logged, mnotifyError: result.error, mnotifyRaw: result.raw };
     }
 
     return logged;

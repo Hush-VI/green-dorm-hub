@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import building from "@/assets/building.jpg";
-import { useRegisterStudent, useRooms, useMeters, useSettings, useInitPayment, useHostelFeeForRoom } from "@/lib/queries";
+import { useRegisterStudent, useRooms, useMeters, useSettings, useHostelFeeForRoom } from "@/lib/queries";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -23,12 +23,12 @@ type Step = 1 | 2 | 3; // 1=details, 2=policy, 3=payment
 
 type Form = {
   fullName: string; phone: string; whatsapp: string; course: string;
-  level: string; roomNo: string; guardianPhone: string; username: string; password: string;
+  level: string; roomNo: string; guardianName: string; guardianPhone: string; username: string; password: string;
 };
 
 const empty: Form = {
   fullName: "", phone: "", whatsapp: "", course: "", level: "",
-  roomNo: "", guardianPhone: "", username: "", password: "",
+  roomNo: "", guardianName: "", guardianPhone: "", username: "", password: "",
 };
 
 function Onboarding() {
@@ -43,7 +43,7 @@ function Onboarding() {
   const { data: settings } = useSettings();
   const { data: roomFeeData } = useHostelFeeForRoom(form.roomNo);
   const createStudent = useRegisterStudent();
-  const initPayment = useInitPayment();
+  // hostelFee shown on step 3 notice
 
   // Registration fee is flat; hostel fee depends on room capacity
   const hostelFee = roomFeeData?.hostelFee ?? settings?.hostel_fee ?? 0;
@@ -78,6 +78,7 @@ function Onboarding() {
         level: form.level,
         room_no: form.roomNo || null,
         meter_no: resolvedMeter,
+        guardian_name: form.guardianName,
         guardian_phone: form.guardianPhone,
         username: form.username,
         password: form.password,
@@ -97,28 +98,10 @@ function Onboarding() {
     );
   }
 
-  function payNow() {
-    if (!createdStudentId || !settings) return;
-    const callbackUrl = `${window.location.origin}/payment-callback`;
-    initPayment.mutate(
-      {
-        studentId: createdStudentId,
-        email: `${form.username}@smehostels.com`,
-        amountGhs: settings.registration_fee,
-        callbackUrl,
-      },
-      {
-        onSuccess: ({ url }) => {
-          window.location.href = url;
-        },
-      },
-    );
-  }
-
   const stepLabels: { n: Step; label: string }[] = [
     { n: 1, label: "Your details" },
     { n: 2, label: "Policy" },
-    { n: 3, label: "Payment" },
+    { n: 3, label: "Done" },
   ];
 
   return (
@@ -204,7 +187,10 @@ function Onboarding() {
                 </div>
               </div>
 
-              <Field icon={ShieldCheck} type="tel" label="Guardian's phone" placeholder="+233 24 000 0000" value={form.guardianPhone} onChange={upd("guardianPhone")} required />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field icon={ShieldCheck} label="Guardian's name" placeholder="Mr. Mensah" value={form.guardianName} onChange={upd("guardianName")} required />
+                <Field icon={Phone} type="tel" label="Guardian's phone" placeholder="+233 24 000 0000" value={form.guardianPhone} onChange={upd("guardianPhone")} required />
+              </div>
 
               <div className="rounded-2xl border border-border bg-white/60 p-4">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -272,7 +258,7 @@ function Onboarding() {
             </div>
           )}
 
-          {/* ── STEP 3: Payment ── */}
+          {/* ── STEP 3: Registration fee notice ── */}
           {step === 3 && (
             <div className="space-y-5">
               <div className="flex items-center gap-3">
@@ -280,12 +266,13 @@ function Onboarding() {
                   <CreditCard className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold">Pay registration fee</h2>
-                  <p className="text-sm text-muted-foreground">Secure payment via Paystack. You'll get an SMS confirmation.</p>
+                  <h2 className="text-xl font-semibold">Almost there!</h2>
+                  <p className="text-sm text-muted-foreground">One last thing before you enter the portal.</p>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-border bg-white/70 p-5 space-y-3">
+              {/* Summary */}
+              <div className="rounded-2xl border border-border bg-white/70 p-5 space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Student</span>
                   <span className="font-semibold">{form.fullName}</span>
@@ -298,34 +285,37 @@ function Onboarding() {
                   <span className="text-muted-foreground">Meter</span>
                   <span className="font-semibold">{resolvedMeter ?? "—"}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Room capacity</span>
-                  <span className="font-semibold">{roomFeeData?.capacity ?? "—"}-person room</span>
-                </div>
-                <div className="border-t border-border pt-3 flex items-center justify-between">
-                  <span className="text-muted-foreground">Registration fee (pay now)</span>
-                  <span className="text-xl font-bold text-primary">GHS {settings?.registration_fee?.toLocaleString() ?? "—"}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Hostel fee (pay later)</span>
-                  <span className="font-semibold">GHS {hostelFee.toLocaleString()}</span>
-                </div>
+                {roomFeeData?.capacity && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Annual hostel fee</span>
+                    <span className="font-semibold">GHS {hostelFee.toLocaleString()}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 text-xs text-amber-800">
-                Payment is processed securely by Paystack. You will be redirected back here after payment and an SMS confirmation will be sent to <strong>{form.phone}</strong>.
+              {/* Registration fee notice */}
+              <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
+                <div className="flex items-start gap-3">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                    <CreditCard className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-foreground">Registration fee required</div>
+                    <div className="mt-1 text-2xl font-bold text-primary">
+                      GHS {settings?.registration_fee?.toLocaleString() ?? "—"}
+                    </div>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      This one-time fee must be paid to management to activate your account fully.
+                      You can pay via <strong>bank transfer or MoMo</strong> — details are in the Fees section of your portal.
+                      Use your Student ID as the payment reference.
+                    </p>
+                  </div>
+                </div>
               </div>
-
-              <button onClick={payNow} disabled={initPayment.isPending || !settings}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-soft transition disabled:opacity-50 hover:opacity-95">
-                {initPayment.isPending
-                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Redirecting to Paystack…</>
-                  : <><CreditCard className="h-4 w-4" /> Pay GHS {settings?.registration_fee?.toLocaleString() ?? "…"} now</>}
-              </button>
 
               <button onClick={() => navigate({ to: "/portal" })}
-                className="w-full rounded-2xl border border-border bg-white/60 py-3 text-sm text-muted-foreground hover:bg-white/80">
-                Skip for now — pay later from portal
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-soft transition hover:opacity-95">
+                Enter portal <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           )}
