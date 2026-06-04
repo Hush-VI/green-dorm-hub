@@ -5,3 +5,8 @@ main = "src/server.ts"
 
 [observability]
 enabled = true
+
+[vars]
+SUPABASE_URL = "https://ahnkkahwdyrdnxugnzjt.supabase.co"
+MNOTIFY_SENDER_ID = "SME HOSTEL"
+ADMIN_SETUP_KEY = "sme-setup-2024"

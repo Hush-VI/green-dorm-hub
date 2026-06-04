@@ -17,7 +17,6 @@ import {
   useStoreItems, useOrders, usePlaceOrder,
   useMeters, useStudents,
   useElectricityLogs, useLogElectricityTopup,
-  useHostelFeeForRoom,
 } from "@/lib/queries";
 
 export const Route = createFileRoute("/portal")({
@@ -62,6 +61,25 @@ function Portal() {
 
   if (isLoading) {
     return <div className="grid min-h-screen place-items-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
+  }
+
+  if (!student && !isLoading && currentId) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-background px-4">
+        <div className="w-full max-w-sm text-center">
+          <div className="text-4xl font-bold text-destructive">!</div>
+          <div className="mt-2 text-lg font-semibold">Portal unavailable</div>
+          <div className="mt-1 text-sm text-muted-foreground">Could not connect to the server. Please check your internet connection and try again.</div>
+          <button onClick={() => window.location.reload()} className="mt-4 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground">
+            Retry
+          </button>
+          <button onClick={() => { sessionStorage.removeItem("sme_student_id"); window.location.href = "/"; }}
+            className="mt-2 block w-full rounded-full border border-border py-2.5 text-sm text-muted-foreground">
+            Back to sign in
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (!student) {
@@ -175,7 +193,7 @@ function HomeTab({ studentId, onNavTab, onSub }: { studentId: string; onNavTab: 
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard icon={DoorOpen} label="Room" value={s.room_no ?? "—"} />
-        <StatCard icon={Wallet} label="Hostel Fee" value={s.hostel_paid >= hostelFee ? "Paid" : "Pending"} />
+        <StatCard icon={Wallet} label="Reg. Fee" value={s.reg_status === "paid" ? "Paid" : "Pending"} />
         <StatCard icon={Zap} label="Meter" value={s.meter_no ?? "—"} />
         <StatCard icon={CheckCircle2} label="Status" value={s.check_status === "in" ? "In" : "Out"} />
       </div>
@@ -284,11 +302,9 @@ function FeesTab({ studentId }: { studentId: string }) {
   const { data: s } = useStudent(studentId);
   const { data: settings } = useSettings();
   const { data: payments = [] } = usePayments(studentId);
-  const { data: roomFeeData } = useHostelFeeForRoom(s?.room_no ?? "");
 
   if (!s || !settings) return null;
 
-  const hostelFee = roomFeeData?.hostelFee ?? settings.hostel_fee;
   const sorted = [...payments].sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime());
 
   return (
