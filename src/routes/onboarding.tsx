@@ -258,7 +258,7 @@ function Onboarding() {
             </div>
           )}
 
-          {/* ── STEP 3: Registration fee notice ── */}
+          {/* ── STEP 3: WhatsApp + registration fee notice ── */}
           {step === 3 && (
             <div className="space-y-5">
               <div className="flex items-center gap-3">
@@ -267,7 +267,30 @@ function Onboarding() {
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold">Almost there!</h2>
-                  <p className="text-sm text-muted-foreground">One last thing before you enter the portal.</p>
+                  <p className="text-sm text-muted-foreground">Two quick steps before your dashboard.</p>
+                </div>
+              </div>
+
+              {/* WhatsApp channel */}
+              <div className="rounded-2xl border-2 border-[#25D366]/40 bg-[#25D366]/5 p-5">
+                <div className="flex items-start gap-3">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#25D366]/15 text-[#25D366]">
+                    <MessageCircle className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-bold">Join our WhatsApp channel</div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Get official announcements, fee reminders, and hostel updates directly on WhatsApp.
+                    </p>
+                    <a
+                      href="https://www.whatsapp.com/channel/0029Vb87HDIGufIrFACxHO1j"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-sm font-semibold text-white shadow-soft hover:opacity-90">
+                      <MessageCircle className="h-4 w-4" />
+                      Join SME Hostels channel
+                    </a>
+                  </div>
                 </div>
               </div>
 
@@ -369,4 +392,5 @@ const GUIDELINES = [
   { title: "Timely fee payments", body: "Rent and utilities must be settled by the posted due dates. Late fees apply after grace periods." },
   { title: "Report issues promptly", body: "Contact management for plumbing, electrical, Wi-Fi or any safety concerns." },
   { title: "Emergency contact awareness", body: "Memorize the 24/7 hostel security line. In medical emergencies, call the posted emergency numbers." },
+  { title: "Default & disciplinary action", body: "Default in any of the hostel contractual policies shall result in an appreciable fine, disciplinary action, or being totally expelled from the hostel without a refund or compensation; depending on the nature of the wrongful act or harm caused. This shall solely be effected by management decision as and when possible." },
 ];

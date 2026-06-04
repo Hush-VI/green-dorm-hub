@@ -674,6 +674,23 @@ function MeterTab({ studentId, onBack }: { studentId: string; onBack: () => void
       )}
 
       {/* ── Prepaid electricity top-up ── */}
+      <div className="squircle bg-violet-50 border border-violet-200 p-5">
+        <div className="flex items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-700">
+            <Zap className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-sm font-bold text-violet-900">How to top up prepaid electricity</div>
+            <ol className="mt-2 space-y-1.5 text-xs text-violet-800 list-decimal list-inside">
+              <li>Download the <strong>ECG POWER APP</strong> on your phone, or dial <strong>*226#</strong> and follow the steps to pay for your prepaid.</li>
+              <li>Once payment is confirmed, load your token on the meter <strong>(INEST)</strong>.</li>
+              <li>Use the form below to log your top-up so your meter-mates are notified.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Prepaid electricity log form ── */}
       <div className="squircle bg-white p-5 shadow-soft">
         <div className="flex items-center justify-between mb-3">
           <div>
