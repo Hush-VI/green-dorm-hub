@@ -147,8 +147,8 @@ function Onboarding() {
               <Field icon={User} label="Full name" placeholder="Ama Mensah" value={form.fullName} onChange={upd("fullName")} required />
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field icon={Phone} type="tel" label="Phone number" placeholder="+233 20 000 0000" value={form.phone} onChange={upd("phone")} required />
-                <Field icon={MessageCircle} type="tel" label="WhatsApp number" placeholder="+233 20 000 0000" value={form.whatsapp} onChange={upd("whatsapp")} required />
+                <Field icon={Phone} type="tel" label="Phone number" placeholder="0241234567" value={form.phone} onChange={upd("phone")} required />
+                <Field icon={MessageCircle} type="tel" label="WhatsApp number" placeholder="0241234567" value={form.whatsapp} onChange={upd("whatsapp")} required />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -191,7 +191,7 @@ function Onboarding() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field icon={ShieldCheck} label="Guardian's name" placeholder="Mr. Mensah" value={form.guardianName} onChange={upd("guardianName")} required />
-                <Field icon={Phone} type="tel" label="Guardian's phone" placeholder="+233 24 000 0000" value={form.guardianPhone} onChange={upd("guardianPhone")} required />
+                <Field icon={Phone} type="tel" label="Guardian's phone" placeholder="0241234567" value={form.guardianPhone} onChange={upd("guardianPhone")} required />
               </div>
 
               <div className="rounded-2xl border border-border bg-white/60 p-4">

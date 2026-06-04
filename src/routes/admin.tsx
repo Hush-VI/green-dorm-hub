@@ -373,8 +373,8 @@ function StudentModal({ initial, rooms, meters, onClose, onSave }: {
         <FormField label="WhatsApp" value={f.whatsapp} onChange={(v) => setF({ ...f, whatsapp: v })} />
         <FormField label="Guardian Name" value={f.guardian_name} onChange={(v) => setF({ ...f, guardian_name: v })} />
         <FormField label="Guardian Phone" value={f.guardian_phone} onChange={(v) => setF({ ...f, guardian_phone: v })} />
-        <FormSelect label="Room" value={f.room_no ?? ""} onChange={(v) => setF({ ...f, room_no: v || null })} options={rooms.map((r) => r.no)} />
-        <FormSelect label="Meter" value={f.meter_no ?? ""} onChange={(v) => setF({ ...f, meter_no: v || null })} options={meters.map((m) => m.no)} />
+        <FormSelect label="Room" value={f.room_no ?? ""} onChange={(v) => setF({ ...f, room_no: (v || null) as any })} options={["", ...rooms.map((r) => r.no)]} />
+        <FormSelect label="Meter" value={f.meter_no ?? ""} onChange={(v) => setF({ ...f, meter_no: (v || null) as any })} options={["", ...meters.map((m) => m.no)]} />
         <FormSelect label="Registration Status" value={f.reg_status} onChange={(v) => setF({ ...f, reg_status: v as any })} options={["paid","partial","unpaid"]} />
         <FormField label="Amount Paid (Reg.)" type="number" value={String(f.reg_paid)} onChange={(v) => setF({ ...f, reg_paid: Number(v) })} />
       </div>
@@ -491,7 +491,7 @@ function RoomModal({ initial, meters, onClose, onSave }: { initial?: RoomRow; me
         <FormField label="Room Number" value={f.no} onChange={(v) => setF({ ...f, no: v })} disabled={!!initial} />
         <FormField label="Capacity" type="number" value={String(f.capacity)} onChange={(v) => setF({ ...f, capacity: Number(v) })} />
         <FormSelect label="Status" value={f.status} onChange={(v) => setF({ ...f, status: v as any })} options={["available","full","maintenance"]} />
-        <FormSelect label="Meter" value={f.meter_no ?? ""} onChange={(v) => setF({ ...f, meter_no: v || null })} options={meters.map((m) => m.no)} />
+        <FormSelect label="Meter" value={f.meter_no ?? ""} onChange={(v) => setF({ ...f, meter_no: (v || null) as any })} options={["", ...meters.map((m) => m.no)]} />
       </div>
       <div className="mt-5 flex justify-end gap-2">
         <button onClick={onClose} className="rounded-full border border-border bg-white px-4 py-2 text-sm">Cancel</button>
@@ -961,7 +961,7 @@ function ItemModal({ initial, onClose, onSave }: { initial?: StoreItemRow; onClo
         <FormField label="Price" type="number" value={String(f.price)} onChange={(v) => setF({ ...f, price: Number(v) })} />
         <FormField label="Unit" value={f.unit} onChange={(v) => setF({ ...f, unit: v })} />
         <FormField label="Stock" type="number" value={String(f.stock)} onChange={(v) => setF({ ...f, stock: Number(v) })} />
-        <FormSelect label="Category" value={f.category} onChange={(v) => setF({ ...f, category: v })} options={["Water","Drinks","Food","Toiletries","Stationery","Other"]} />
+        <FormSelect label="Category" value={f.category} onChange={(v) => setF({ ...f, category: v ?? "Other" })} options={["Water","Drinks","Food","Toiletries","Stationery","Other"]} />
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.available} onChange={(e) => setF({ ...f, available: e.target.checked })} className="h-4 w-4" /> Available</label>
       </div>
       <div className="mt-5 flex justify-end gap-2">
@@ -1493,11 +1493,11 @@ function FormField({ label, type = "text", value, onChange, disabled }: { label:
   );
 }
 
-function FormSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
+function FormSelect({ label, value, onChange, options }: { label: string; value: string | null; onChange: (v: string) => void; options: string[] }) {
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-medium text-foreground">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30">
+      <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30">
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
     </label>

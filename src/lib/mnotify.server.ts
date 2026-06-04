@@ -1,5 +1,14 @@
 import { getEnv } from "./env.server";
 
+// Normalize Ghanaian phone numbers to local format (0XXXXXXXXX)
+// mNotify accepts both 0XXXXXXXXX and 233XXXXXXXXX but local is simpler
+function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\s+/g, "").replace(/[^\d+]/g, "");
+  if (digits.startsWith("+233")) return "0" + digits.slice(4);
+  if (digits.startsWith("233")) return "0" + digits.slice(3);
+  return digits;
+}
+
 // mNotify Ghana SMS API v2
 // POST https://api.mnotify.com/api/sms/quick?key=API_KEY
 // Body: { recipient: string[], sender: string, message: string, is_schedule: false, schedule_date: "" }
@@ -20,7 +29,9 @@ export async function sendSms(opts: {
 
   if (!apiKey) return { success: false, error: "Missing MNOTIFY_API_KEY." };
 
-  const recipient = Array.isArray(opts.to) ? opts.to : [opts.to];
+  const recipient = Array.isArray(opts.to)
+    ? opts.to.map(normalizePhone)
+    : [normalizePhone(opts.to)];
   const sender = opts.senderId ?? defaultSenderId;
 
   const url = `https://api.mnotify.com/api/sms/quick?key=${encodeURIComponent(apiKey)}`;

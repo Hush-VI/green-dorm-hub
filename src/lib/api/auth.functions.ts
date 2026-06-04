@@ -4,7 +4,6 @@ import { getSupabaseAdmin } from "../supabase.server";
 import { hashPassword, verifyPassword } from "../crypto.server";
 import { getEnv } from "../env.server";
 import { sendSms } from "../mnotify.server";
-
 // ── Admin login ───────────────────────────────────────────────────────────────
 
 export const loginAdmin = createServerFn({ method: "POST" })
@@ -156,16 +155,17 @@ export const registerStudent = createServerFn({ method: "POST" })
 
     if (error) throw new Error(error.message);
 
-    // Send welcome SMS
+    // Send welcome SMS (non-blocking — don't fail registration if SMS fails)
     const welcomeMsg =
       `Welcome to SME Hostels, ${data.full_name.split(" ")[0]}! ` +
-      `Your account has been created. Student ID: ${student.id}. ` +
+      `Your account is created. Student ID: ${student.id}. ` +
       `Room: ${data.room_no ?? "TBA"}. ` +
-      `Please pay your registration fee to management to activate your account. ` +
-      `– SME Hostels Management`;
+      `Pay your registration fee to management to activate your account. ` +
+      `– SME Hostels`;
 
-    // Fire and forget — don't block account creation if SMS fails
-    sendSms({ to: data.phone, message: welcomeMsg }).catch(() => {});
+    sendSms({ to: data.phone, message: welcomeMsg }).then((r) => {
+      if (!r.success) console.error("Welcome SMS failed:", r.error, r.code);
+    });
 
     return { id: student.id, full_name: student.full_name };
   });
