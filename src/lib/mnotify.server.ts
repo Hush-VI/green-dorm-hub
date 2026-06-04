@@ -1,10 +1,9 @@
 import { getEnv } from "./env.server";
 
-// mNotify Ghana SMS API
-// Endpoint: https://apps.mnotify.net/smsapi?key=KEY&to=NUMBER&msg=MSG&sender_id=SENDERID
-// Success response: { "status": "success", "code": "1000" }
-// Error codes: 1002=failed, 1003=low credit, 1004=invalid key, 1005=invalid number,
-//              1006=invalid sender id (max 11 chars incl. spaces), 1008=empty message
+// mNotify Ghana SMS API v2
+// POST https://api.mnotify.com/api/sms/quick?key=API_KEY
+// Body: { recipient: string[], sender: string, message: string, is_schedule: false, schedule_date: "" }
+// Success: { status: "success", code: "1000" }
 
 export interface SendSmsResult {
   success: boolean;
@@ -21,21 +20,30 @@ export async function sendSms(opts: {
 
   if (!apiKey) return { success: false, error: "Missing MNOTIFY_API_KEY." };
 
-  const to = Array.isArray(opts.to) ? opts.to.join(",") : opts.to;
-  const sender_id = opts.senderId ?? defaultSenderId;
-  const msg = opts.message;
+  const recipient = Array.isArray(opts.to) ? opts.to : [opts.to];
+  const sender = opts.senderId ?? defaultSenderId;
 
-  const url = `https://apps.mnotify.net/smsapi?key=${encodeURIComponent(apiKey)}&to=${encodeURIComponent(to)}&msg=${encodeURIComponent(msg)}&sender_id=${encodeURIComponent(sender_id)}`;
+  const url = `https://api.mnotify.com/api/sms/quick?key=${encodeURIComponent(apiKey)}`;
 
   try {
-    const res = await fetch(url, { method: "GET" });
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recipient,
+        sender,
+        message: opts.message,
+        is_schedule: false,
+        schedule_date: "",
+      }),
+    });
+
     const text = await res.text();
 
     let data: Record<string, string>;
     try {
       data = JSON.parse(text);
     } catch {
-      // Not JSON — if HTTP 200 treat as success
       return res.ok
         ? { success: true }
         : { success: false, error: `mNotify HTTP ${res.status}: ${text}` };
