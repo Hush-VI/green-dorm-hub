@@ -1,18 +1,15 @@
 import { getEnv } from "./env.server";
 
 // mNotify Ghana SMS API
-// Docs: https://apps.mnotify.net (login → API section)
-// Two possible endpoint formats — we try the v2 JSON API first, fall back to query-string API
-
-const MNOTIFY_V2 = "https://apps.mnotify.net/smsapi/v2/sms/quick-sms";
-const MNOTIFY_V1 = "https://apps.mnotify.net/smsapi";
+// Endpoint: https://apps.mnotify.net/smsapi?key=KEY&to=NUMBER&msg=MSG&sender_id=SENDERID
+// Success response: { "status": "success", "code": "1000" }
+// Error codes: 1002=failed, 1003=low credit, 1004=invalid key, 1005=invalid number,
+//              1006=invalid sender id (max 11 chars incl. spaces), 1008=empty message
 
 export interface SendSmsResult {
   success: boolean;
-  messageId?: string;
-  status?: string;
+  code?: string;
   error?: string;
-  raw?: unknown;
 }
 
 export async function sendSms(opts: {
@@ -22,62 +19,52 @@ export async function sendSms(opts: {
 }): Promise<SendSmsResult> {
   const { MNOTIFY_API_KEY: apiKey, MNOTIFY_SENDER_ID: defaultSenderId } = getEnv();
 
-  if (!apiKey) {
-    return { success: false, error: "Missing MNOTIFY_API_KEY." };
-  }
+  if (!apiKey) return { success: false, error: "Missing MNOTIFY_API_KEY." };
 
-  const recipients = Array.isArray(opts.to) ? opts.to.join(",") : opts.to;
-  const sender = opts.senderId ?? defaultSenderId;
+  const to = Array.isArray(opts.to) ? opts.to.join(",") : opts.to;
+  const sender_id = opts.senderId ?? defaultSenderId;
+  const msg = opts.message;
 
-  // Try v1 query-string API (most common for mNotify Ghana)
-  const params = new URLSearchParams({
-    key: apiKey,
-    to: recipients,
-    msg: opts.message,
-    sender_id: sender,
-    schedule_date: "",
-    schedule_time: "",
-  });
+  const url = `https://apps.mnotify.net/smsapi?key=${encodeURIComponent(apiKey)}&to=${encodeURIComponent(to)}&msg=${encodeURIComponent(msg)}&sender_id=${encodeURIComponent(sender_id)}`;
 
   try {
-    const res = await fetch(`${MNOTIFY_V1}?${params.toString()}`, {
-      method: "GET",
-      headers: { Accept: "application/json" },
-    });
-
+    const res = await fetch(url, { method: "GET" });
     const text = await res.text();
 
-    // mNotify sometimes returns plain text, sometimes JSON
-    let data: Record<string, unknown>;
+    let data: Record<string, string>;
     try {
       data = JSON.parse(text);
     } catch {
-      // Plain text response — treat non-empty as success indicator
-      if (res.ok) return { success: true, raw: text };
-      return { success: false, error: `mNotify error: ${text}` };
+      // Not JSON — if HTTP 200 treat as success
+      return res.ok
+        ? { success: true }
+        : { success: false, error: `mNotify HTTP ${res.status}: ${text}` };
     }
 
-    // Check various success indicators mNotify uses
-    if (
-      data.status === "success" ||
-      data.code === "1000" ||
-      data.code === "000" ||
-      String(data.status) === "1"
-    ) {
-      return { success: true, messageId: String(data.message_id ?? data.id ?? ""), raw: data };
+    const code = String(data.code ?? "");
+    const status = String(data.status ?? "");
+
+    if (code === "1000" || status === "success") {
+      return { success: true, code };
     }
+
+    const errorMap: Record<string, string> = {
+      "1002": "SMS sending failed (server error)",
+      "1003": "Insufficient SMS credit balance",
+      "1004": "Invalid API key",
+      "1005": "Invalid recipient phone number",
+      "1006": "Invalid sender ID (max 11 characters including spaces)",
+      "1007": "Message scheduled",
+      "1008": "Empty message",
+    };
 
     return {
       success: false,
-      status: String(data.status ?? ""),
-      error: `mNotify code: ${data.code ?? data.status} — ${data.message ?? data.msg ?? ""}`,
-      raw: data,
+      code,
+      error: errorMap[code] ?? `mNotify error code ${code}: ${status}`,
     };
   } catch (err) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Network error sending SMS",
-    };
+    return { success: false, error: err instanceof Error ? err.message : "Network error" };
   }
 }
 

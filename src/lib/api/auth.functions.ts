@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSupabaseAdmin } from "../supabase.server";
 import { hashPassword, verifyPassword } from "../crypto.server";
 import { getEnv } from "../env.server";
+import { sendSms } from "../mnotify.server";
 
 // ── Admin login ───────────────────────────────────────────────────────────────
 
@@ -154,6 +155,18 @@ export const registerStudent = createServerFn({ method: "POST" })
       .single();
 
     if (error) throw new Error(error.message);
+
+    // Send welcome SMS
+    const welcomeMsg =
+      `Welcome to SME Hostels, ${data.full_name.split(" ")[0]}! ` +
+      `Your account has been created. Student ID: ${student.id}. ` +
+      `Room: ${data.room_no ?? "TBA"}. ` +
+      `Please pay your registration fee to management to activate your account. ` +
+      `– SME Hostels Management`;
+
+    // Fire and forget — don't block account creation if SMS fails
+    sendSms({ to: data.phone, message: welcomeMsg }).catch(() => {});
+
     return { id: student.id, full_name: student.full_name };
   });
 

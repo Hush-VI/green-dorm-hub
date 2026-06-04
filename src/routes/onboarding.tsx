@@ -260,87 +260,14 @@ function Onboarding() {
 
           {/* ── STEP 3: WhatsApp + registration fee notice ── */}
           {step === 3 && (
-            <div className="space-y-5">
-              <div className="flex items-center gap-3">
-                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">
-                  <CreditCard className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold">Almost there!</h2>
-                  <p className="text-sm text-muted-foreground">Two quick steps before your dashboard.</p>
-                </div>
-              </div>
-
-              {/* WhatsApp channel */}
-              <div className="rounded-2xl border-2 border-[#25D366]/40 bg-[#25D366]/5 p-5">
-                <div className="flex items-start gap-3">
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#25D366]/15 text-[#25D366]">
-                    <MessageCircle className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-bold">Join our WhatsApp channel</div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Get official announcements, fee reminders, and hostel updates directly on WhatsApp.
-                    </p>
-                    <a
-                      href="https://www.whatsapp.com/channel/0029Vb87HDIGufIrFACxHO1j"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-sm font-semibold text-white shadow-soft hover:opacity-90">
-                      <MessageCircle className="h-4 w-4" />
-                      Join SME Hostels channel
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              {/* Summary */}
-              <div className="rounded-2xl border border-border bg-white/70 p-5 space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Student</span>
-                  <span className="font-semibold">{form.fullName}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Room</span>
-                  <span className="font-semibold">{form.roomNo}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Meter</span>
-                  <span className="font-semibold">{resolvedMeter ?? "—"}</span>
-                </div>
-                {roomFeeData?.capacity && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Annual hostel fee</span>
-                    <span className="font-semibold">GHS {hostelFee.toLocaleString()}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Registration fee notice */}
-              <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
-                <div className="flex items-start gap-3">
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                    <CreditCard className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-foreground">Registration fee required</div>
-                    <div className="mt-1 text-2xl font-bold text-primary">
-                      GHS {settings?.registration_fee?.toLocaleString() ?? "—"}
-                    </div>
-                    <p className="mt-1.5 text-xs text-muted-foreground">
-                      This one-time fee must be paid to management to activate your account fully.
-                      You can pay via <strong>bank transfer or MoMo</strong> — details are in the Fees section of your portal.
-                      Use your Student ID as the payment reference.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <button onClick={() => navigate({ to: "/portal" })}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-soft transition hover:opacity-95">
-                Enter portal <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
+            <WhatsAppStep
+              form={form}
+              resolvedMeter={resolvedMeter}
+              roomFeeData={roomFeeData}
+              hostelFee={hostelFee}
+              settings={settings}
+              onEnter={() => navigate({ to: "/portal" })}
+            />
           )}
         </div>
 
@@ -380,6 +307,79 @@ function SelectField({ icon: Icon, label, options, placeholder, ...props }: {
         </select>
       </div>
     </label>
+  );
+}
+
+function WhatsAppStep({ form, resolvedMeter, roomFeeData, hostelFee, settings, onEnter }: {
+  form: Form; resolvedMeter: string | null; roomFeeData: any; hostelFee: number; settings: any; onEnter: () => void;
+}) {
+  const [joined, setJoined] = useState(false);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3">
+        <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#25D366]/15 text-[#25D366]">
+          <MessageCircle className="h-5 w-5" />
+        </div>
+        <div>
+          <h2 className="text-xl font-semibold">Join our WhatsApp channel</h2>
+          <p className="text-sm text-muted-foreground">Required before accessing the portal.</p>
+        </div>
+      </div>
+
+      {/* WhatsApp channel card */}
+      <div className="rounded-2xl border-2 border-[#25D366]/40 bg-[#25D366]/5 p-5">
+        <p className="text-sm text-muted-foreground mb-4">
+          All official hostel announcements, fee reminders, and urgent notices are sent through our WhatsApp channel.
+          You <strong>must</strong> join to stay informed.
+        </p>
+        <a
+          href="https://www.whatsapp.com/channel/0029Vb87HDIGufIrFACxHO1j"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-3 text-sm font-semibold text-white shadow-soft hover:opacity-90 transition">
+          <MessageCircle className="h-4 w-4" />
+          Tap here to join SME Hostels channel
+        </a>
+      </div>
+
+      {/* Confirmation checkbox — button stays disabled until ticked */}
+      <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-secondary/60 p-4">
+        <input type="checkbox" checked={joined} onChange={(e) => setJoined(e.target.checked)}
+          className="mt-1 h-4 w-4 accent-[oklch(0.68_0.17_145)]" />
+        <span className="text-sm">
+          I, <strong>{form.fullName}</strong>, confirm that I have joined the SME Hostels WhatsApp channel.
+        </span>
+      </label>
+
+      {/* Registration fee notice */}
+      <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
+        <div className="flex items-start gap-3">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <CreditCard className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-sm font-bold text-foreground">Registration fee required</div>
+            <div className="mt-1 text-2xl font-bold text-primary">
+              GHS {settings?.registration_fee?.toLocaleString() ?? "—"}
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Pay via <strong>bank transfer or MoMo</strong> to management.
+              Use your Student ID as the payment reference.
+              Details are in the Fees section of your portal.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <button onClick={onEnter} disabled={!joined}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-soft transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50">
+        Enter portal <ArrowRight className="h-4 w-4" />
+      </button>
+      {!joined && (
+        <p className="text-center text-xs text-muted-foreground">You must join the WhatsApp channel to proceed.</p>
+      )}
+    </div>
   );
 }
 
