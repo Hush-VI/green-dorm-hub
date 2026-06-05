@@ -386,13 +386,60 @@ function WhatsAppStep({ form, resolvedMeter, roomFeeData, hostelFee, settings, o
 }
 
 const GUIDELINES = [
-  { title: "Quiet hours (10pm – 6am)", body: "Keep noise to a minimum to respect fellow residents preparing for classes and rest." },
-  { title: "No unauthorized visitors", body: "Visitors must sign in at reception. Overnight guests are not permitted without prior approval." },
-  { title: "Keep your room & shared spaces clean", body: "Weekly inspections take place. Damages will be billed to the responsible student." },
-  { title: "Fire & safety compliance", body: "No cooking appliances, candles, or smoking in rooms. Know your nearest fire exit." },
-  { title: "Respect & zero tolerance for harassment", body: "Discrimination, bullying, or harassment of any kind will lead to immediate review." },
-  { title: "Timely fee payments", body: "Rent and utilities must be settled by the posted due dates. Late fees apply after grace periods." },
-  { title: "Report issues promptly", body: "Contact management for plumbing, electrical, Wi-Fi or any safety concerns." },
-  { title: "Emergency contact awareness", body: "Memorize the 24/7 hostel security line. In medical emergencies, call the posted emergency numbers." },
-  { title: "Default & disciplinary action", body: "Default in any of the hostel contractual policies shall result in an appreciable fine, disciplinary action, or being totally expelled from the hostel without a refund or compensation; depending on the nature of the wrongful act or harm caused. This shall solely be effected by management decision as and when possible." },
+  {
+    title: "SME Hostel Pricing & Capacity",
+    body: "GHC 6,000 for four in a room · GHC 8,000 for three in a room · GHC 8,000 for two in a room.",
+  },
+  {
+    title: "What Your Hostel Fees Cover",
+    body: "Accommodation (bed space in shared/dorm or private room), utilities (electricity with usage limits, water, WiFi + generator backup), furniture & setup (bed frame, mattress, pillow — bring your own sheets unless you buy our bedding package), shared spaces (lounge/TV area, kitchen, dining, shared bathrooms), 24/7 security (guards, CCTV, access control), common area cleaning daily, dorm rooms weekly, and professional washroom cleaning every 2 weeks.",
+  },
+  {
+    title: "Usually Not Included in Hostel Fees",
+    body: "Beddings (duvet, sheets, pillowcases — unless you got the bedding pack), laundry (separate cost or coin/token machines), personal mobile data (WiFi is free but airtime is on you), food (kitchen is self-cook; meal plans only if offered), storage lockers (may carry a small monthly fee), and damages (you pay for anything you break).",
+  },
+  {
+    title: "Registration Fee — GHC 100 (One-Time, Non-Refundable)",
+    body: "Covers: admin/onboarding (profile setup, ID check, room assignment, contract signing), access items (room key/card + spare, locker key — replacements cost extra if lost), move-in prep (bed inspection + initial cleaning), and welcome pack (house rules, WiFi login, emergency contacts, waste schedule). Does NOT cover: rent, beddings, extra utilities from heavy appliances, laundry, meals, or parking.",
+  },
+  {
+    title: "Vacation Policy & Overstay",
+    body: "Residents' personal belongings must not be left in the hostel during vacation. Management will not be held responsible for any loss or damages incurred. Residents who stay over during vacation will be charged GHC 30 per day.",
+  },
+  {
+    title: "Quiet hours (10pm – 6am)",
+    body: "Keep noise to a minimum to respect fellow residents preparing for classes and rest.",
+  },
+  {
+    title: "No unauthorized visitors",
+    body: "Visitors must sign in at reception. Overnight guests are not permitted without prior approval.",
+  },
+  {
+    title: "Keep your room & shared spaces clean",
+    body: "Weekly inspections take place. Damages will be billed to the responsible student.",
+  },
+  {
+    title: "Fire & safety compliance",
+    body: "No cooking appliances, candles, or smoking in rooms. Know your nearest fire exit.",
+  },
+  {
+    title: "Respect & zero tolerance for harassment",
+    body: "Discrimination, bullying, or harassment of any kind will lead to immediate review.",
+  },
+  {
+    title: "Timely fee payments",
+    body: "Rent and utilities must be settled by the posted due dates. Late fees apply after grace periods.",
+  },
+  {
+    title: "Report issues promptly",
+    body: "Contact management for plumbing, electrical, Wi-Fi or any safety concerns.",
+  },
+  {
+    title: "Emergency contact awareness",
+    body: "Memorize the 24/7 hostel security line. In medical emergencies, call the posted emergency numbers.",
+  },
+  {
+    title: "Default & disciplinary action",
+    body: "Default in any of the hostel contractual policies shall result in an appreciable fine, disciplinary action, or being totally expelled from the hostel without a refund or compensation; depending on the nature of the wrongful act or harm caused. This shall solely be effected by management decision as and when possible.",
+  },
 ];

@@ -155,17 +155,19 @@ export const registerStudent = createServerFn({ method: "POST" })
 
     if (error) throw new Error(error.message);
 
-    // Send welcome SMS (non-blocking — don't fail registration if SMS fails)
-    const welcomeMsg =
-      `Welcome to SME Hostels, ${data.full_name.split(" ")[0]}! ` +
-      `Your account is created. Student ID: ${student.id}. ` +
-      `Room: ${data.room_no ?? "TBA"}. ` +
-      `Pay your registration fee to management to activate your account. ` +
-      `– SME Hostels`;
-
-    sendSms({ to: data.phone, message: welcomeMsg }).then((r) => {
-      if (!r.success) console.error("Welcome SMS failed:", r.error, r.code);
-    });
+    // Send welcome SMS synchronously so it completes before the response
+    try {
+      const welcomeMsg =
+        `Welcome to SME Hostels, ${data.full_name.split(" ")[0]}! ` +
+        `Your account is created. Student ID: ${student.id}. ` +
+        `Room: ${data.room_no ?? "TBA"}. ` +
+        `Pay your registration fee to management to activate your account. ` +
+        `– SME Hostels`;
+      await sendSms({ to: data.phone, message: welcomeMsg });
+    } catch (smsErr) {
+      // Log but don't fail — account is already created
+      console.error("Welcome SMS failed:", smsErr);
+    }
 
     return { id: student.id, full_name: student.full_name };
   });

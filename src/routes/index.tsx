@@ -92,7 +92,10 @@ function Login() {
       <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-4 py-10 lg:flex-row lg:gap-12">
         {/* Left hero — desktop only */}
         <div className="hidden lg:flex flex-1 flex-col gap-6 text-white animate-fade-in">
-          <img src={logo} alt="SME Hostels logo" className="h-20 w-auto max-w-[220px] object-contain squircle bg-white p-3 shadow-glass self-start" />
+          <div className="flex items-center gap-4 self-start">
+            <img src="/umat logo.png" alt="UMaT Logo" className="h-16 w-auto object-contain drop-shadow-lg" />
+            <img src={logo} alt="SME Hostels logo" className="h-16 w-auto max-w-[160px] object-contain squircle bg-white p-2 shadow-glass" />
+          </div>
           <h1 className="text-5xl font-bold leading-tight tracking-tight drop-shadow">A home away from home.</h1>
           <p className="max-w-md text-lg text-white/90">Premium student living, simplified. Book rooms, pay fees, and stay updated — all in one place.</p>
           <div className="flex items-center gap-3 text-white/90">
@@ -104,8 +107,9 @@ function Login() {
         {/* Login card */}
         <div className="w-full max-w-md animate-slide-up">
           <div className="glass squircle p-8 shadow-glass">
-            <div className="mb-6 flex flex-col items-center text-center lg:hidden">
-              <img src={logo} alt="SME Hostels logo" className="h-20 w-auto" />
+            <div className="mb-6 flex flex-col items-center gap-3 text-center lg:hidden">
+              <img src="/umat logo.png" alt="UMaT Logo" className="h-12 w-auto object-contain" />
+              <img src={logo} alt="SME Hostels logo" className="h-16 w-auto" />
             </div>
             <h2 className="text-2xl font-semibold text-foreground">Welcome back</h2>
             <p className="mt-1 text-sm text-muted-foreground">Sign in to continue to your dashboard.</p>
