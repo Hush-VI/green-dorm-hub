@@ -94,7 +94,7 @@ function Login() {
         <div className="hidden lg:flex flex-1 flex-col gap-6 text-white animate-fade-in">
           <div className="flex items-center gap-4 self-start">
             <img src="/umat logo.png" alt="UMaT Logo" className="h-16 w-auto object-contain drop-shadow-lg" />
-            <img src={logo} alt="SME Hostels logo" className="h-16 w-auto max-w-[160px] object-contain squircle bg-white p-2 shadow-glass" />
+            <img src={logo} alt="SME Hostels logo" className="h-16 w-auto max-w-[160px] object-contain rounded-2xl border-4 border-white/40 bg-white p-2 shadow-glass" />
           </div>
           <h1 className="text-5xl font-bold leading-tight tracking-tight drop-shadow">A home away from home.</h1>
           <p className="max-w-md text-lg text-white/90">Premium student living, simplified. Book rooms, pay fees, and stay updated — all in one place.</p>
@@ -108,8 +108,8 @@ function Login() {
         <div className="w-full max-w-md animate-slide-up">
           <div className="glass squircle p-8 shadow-glass">
             <div className="mb-6 flex flex-col items-center gap-3 text-center lg:hidden">
-              <img src="/umat logo.png" alt="UMaT Logo" className="h-12 w-auto object-contain" />
-              <img src={logo} alt="SME Hostels logo" className="h-16 w-auto" />
+              <img src="/umat logo.png" alt="UMaT Logo" className="h-20 w-auto object-contain drop-shadow-lg" />
+              <img src={logo} alt="SME Hostels logo" className="h-20 w-auto object-contain rounded-2xl border-4 border-primary/30 bg-white p-2 shadow-glass" />
             </div>
             <h2 className="text-2xl font-semibold text-foreground">Welcome back</h2>
             <p className="mt-1 text-sm text-muted-foreground">Sign in to continue to your dashboard.</p>
