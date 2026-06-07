@@ -392,7 +392,7 @@ const GUIDELINES = [
   },
   {
     title: "What Your Hostel Fees Cover",
-    body: "Accommodation (bed space in shared/dorm or private room), utilities (electricity with usage limits, water, WiFi + generator backup), furniture & setup (bed frame, mattress, pillow — bring your own sheets unless you buy our bedding package), shared spaces (lounge/TV area, kitchen, dining, shared bathrooms), 24/7 security (guards, CCTV, access control), common area cleaning daily, dorm rooms weekly, and professional washroom cleaning every 2 weeks.",
+    body: "Accommodation (bed space in shared/dorm or private room), utilities (electricity with usage limits, water, WiFi + generator backup), furniture & setup (bed frame, mattress, pillow — bring your own sheets unless you buy our bedding package), shared spaces (lounge/TV area, kitchen, dining, shared bathrooms), 24/7 security (guards, CCTV, access control), common area cleaning daily, dorm rooms weekly, professional washroom cleaning every 2 weeks, and sanitation & maintenance (regular garbage collection from central bins — littering around the hostel shall come with a fine or disciplinary action).",
   },
   {
     title: "Usually Not Included in Hostel Fees",
@@ -400,46 +400,54 @@ const GUIDELINES = [
   },
   {
     title: "Registration Fee — GHC 100 (One-Time, Non-Refundable)",
-    body: "Covers: admin/onboarding (profile setup, ID check, room assignment, contract signing), access items (room key/card + spare, locker key — replacements cost extra if lost), move-in prep (bed inspection + initial cleaning), and welcome pack (house rules, WiFi login, emergency contacts, waste schedule). Does NOT cover: rent, beddings, extra utilities from heavy appliances, laundry, meals, or parking.",
+    body: "Covers: admin/onboarding, access items (room key/card + spare, locker key — replacements cost extra), move-in prep, caution deposit (non-refundable), and welcome pack. Does NOT cover rent, beddings, extra utilities, laundry, meals, or parking.",
   },
   {
-    title: "Vacation Policy & Overstay",
-    body: "Residents' personal belongings must not be left in the hostel during vacation. Management will not be held responsible for any loss or damages incurred. Residents who stay over during vacation will be charged GHC 30 per day.",
+    title: "Furniture & Room Care",
+    body: "Don't bring extra furniture. Use only what's provided and take care of all items. Damage or missing items = pay double replacement cost. Wilful damage = 2x repair cost. No moving or interchanging furniture between rooms. Damage/theft in corridors or common areas = cost shared by all students in that wing.",
   },
   {
-    title: "Quiet hours (10pm – 6am)",
+    title: "Electricity & Appliances",
+    body: "No high-power appliances in rooms: microwave, heater, washing machine, electric stove, rice cooker, etc. — confiscated if found. Switch off lights/fans when leaving your room. Bathroom lights only when in use. Fines apply for wasting electricity.",
+  },
+  {
+    title: "Room Checks",
+    body: "The Hostel Manager, porters, or security can inspect rooms and belongings at any time, with the student present.",
+  },
+  {
+    title: "Discipline & Expulsion",
+    body: "Breaking rules, disobeying staff, damaging property, or anti-social/violent acts = immediate termination. Deposit forfeited + no hostel fee refund if expelled.",
+  },
+  {
+    title: "Going Out / Outstation",
+    body: "Going outstation for competitions requires written parent consent + Hostel Council approval. Inform the porter and sign the Outstation Register before leaving.",
+  },
+  {
+    title: "Celebrations",
+    body: "Festivals/birthdays allowed only with prior permission. Birthdays: 8–10 PM, max 2 hours, common area only, no outside guests, must not disturb others.",
+  },
+  {
+    title: "Respect for Staff",
+    body: "Treat all hostel and housekeeping staff with respect. Do not use housekeeping for personal errands. No tips or gifts.",
+  },
+  {
+    title: "Strictly Prohibited",
+    body: "Ragging/fighting/violence (report immediately; expulsion + legal action) · Alcohol/drugs/smoking (zero tolerance; expulsion + legal action) · Gambling (banned; expulsion) · Internet/social media misuse (no defamatory posts about hostel, staff, or students) · Politics/communal activity (no propaganda against law/order) · Media (no interviews about the hostel to press/TV/radio without the Registrar's written permission).",
+  },
+  {
+    title: "Vacation Policy & Overstay Fee",
+    body: "Residents' personal belongings must not be left in the hostel during vacation. Management will not be held responsible for any loss or damages. Residents who stay over during vacation will be charged GHC 30 per day.",
+  },
+  {
+    title: "Quiet Hours (10pm – 6am)",
     body: "Keep noise to a minimum to respect fellow residents preparing for classes and rest.",
   },
   {
-    title: "No unauthorized visitors",
-    body: "Visitors must sign in at reception. Overnight guests are not permitted without prior approval.",
+    title: "Communication & WhatsApp Channel",
+    body: "Official announcements are sent via the SME Hostels WhatsApp channel. You must join and keep notifications on. Ignoring official communications is not an excuse for non-compliance.",
   },
   {
-    title: "Keep your room & shared spaces clean",
-    body: "Weekly inspections take place. Damages will be billed to the responsible student.",
-  },
-  {
-    title: "Fire & safety compliance",
-    body: "No cooking appliances, candles, or smoking in rooms. Know your nearest fire exit.",
-  },
-  {
-    title: "Respect & zero tolerance for harassment",
-    body: "Discrimination, bullying, or harassment of any kind will lead to immediate review.",
-  },
-  {
-    title: "Timely fee payments",
-    body: "Rent and utilities must be settled by the posted due dates. Late fees apply after grace periods.",
-  },
-  {
-    title: "Report issues promptly",
-    body: "Contact management for plumbing, electrical, Wi-Fi or any safety concerns.",
-  },
-  {
-    title: "Emergency contact awareness",
-    body: "Memorize the 24/7 hostel security line. In medical emergencies, call the posted emergency numbers.",
-  },
-  {
-    title: "Default & disciplinary action",
+    title: "Default & Disciplinary Action",
     body: "Default in any of the hostel contractual policies shall result in an appreciable fine, disciplinary action, or being totally expelled from the hostel without a refund or compensation; depending on the nature of the wrongful act or harm caused. This shall solely be effected by management decision as and when possible.",
   },
 ];
