@@ -27,32 +27,30 @@ export const sendSmsToStudents = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const db = getSupabaseAdmin();
 
-    // Send via mNotify
+    // Send via mNotify first
     const result = await sendBulkSms(data.phones, data.message);
 
     const status = result.success ? "sent" : "failed";
 
-    // Log to database regardless of outcome
-    const { data: logged, error } = await db
-      .from("sms_messages")
-      .insert({
+    // Log to database (best-effort — don't fail the whole call if logging fails)
+    try {
+      await db.from("sms_messages").insert({
         recipients: data.recipientsLabel,
         recipient_count: data.phones.length,
         template: data.template ?? null,
         body: data.message,
         status,
         sent_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (error) throw new Error(error.message);
-
-    if (!result.success) {
-      return { ...logged, mnotifyError: result.error, mnotifyRaw: result.raw };
+      });
+    } catch (logErr) {
+      console.error("SMS log failed:", logErr);
     }
 
-    return logged;
+    if (!result.success) {
+      throw new Error(result.error ?? `mNotify error code: ${result.code}`);
+    }
+
+    return { success: true, recipientCount: data.phones.length };
   });
 
 // Convenience: resolve recipient phones from a group label
@@ -96,10 +94,6 @@ export const resolveSmsRecipients = createServerFn({ method: "POST" })
 export const testSms = createServerFn({ method: "POST" })
   .inputValidator(z.object({ phone: z.string().min(1) }))
   .handler(async ({ data }) => {
-    const { sendSms } = await import("../mnotify.server");
-    const result = await sendSms({
-      to: data.phone,
-      message: "SME Hostels: This is a test message. If you received this, SMS is working correctly.",
-    });
+    const result = await sendBulkSms([data.phone], "SME Hostels: This is a test message. If you received this, SMS is working correctly.");
     return result;
   });

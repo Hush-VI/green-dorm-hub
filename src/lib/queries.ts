@@ -290,11 +290,11 @@ export function useSendSms() {
   return useMutation({
     mutationFn: (data: Parameters<typeof sendSmsToStudents>[0]["data"]) =>
       sendSmsToStudents({ data }),
-    onSuccess: () => {
+    onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: QK.sms });
-      toast.success("SMS sent");
+      toast.success(`SMS sent to ${(result as any).recipientCount ?? "?"} recipients`);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(`SMS failed: ${e.message}`),
   });
 }
 
