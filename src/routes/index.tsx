@@ -70,18 +70,18 @@ function Login() {
               username,
             }));
           } catch {}
-          navigate({ to: "/portal" });
+          navigate({ to: "/student-home" });
         },
         onError: (err) => setErrorMsg(err.message),
       });
     }
   }
 
-  // Quick-login: if profile saved and session still valid, go straight to portal
+  // Quick-login: go to student home hub
   function quickLogin() {
     if (!savedProfile) return;
     sessionStorage.setItem("sme_student_id", savedProfile.id);
-    navigate({ to: "/portal" });
+    navigate({ to: "/student-home" });
   }
 
   return (

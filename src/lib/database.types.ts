@@ -62,7 +62,6 @@ export interface Database {
     };
   };
 }
-
 export interface StudentRow {
   id: string;               // e.g. SME-2024-001
   full_name: string;

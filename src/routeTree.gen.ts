@@ -9,14 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StudentHomeRouteImport } from './routes/student-home'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as PortalRouteImport } from './routes/portal'
+import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as PaymentCallbackRouteImport } from './routes/payment-callback'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 
+const StudentHomeRoute = StudentHomeRouteImport.update({
+  id: '/student-home',
+  path: '/student-home',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
   path: '/setup',
@@ -25,6 +32,11 @@ const SetupRoute = SetupRouteImport.update({
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
   path: '/portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PolicyRoute = PolicyRouteImport.update({
+  id: '/policy',
+  path: '/policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PaymentCallbackRoute = PaymentCallbackRouteImport.update({
@@ -59,8 +71,10 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/onboarding': typeof OnboardingRoute
   '/payment-callback': typeof PaymentCallbackRoute
+  '/policy': typeof PolicyRoute
   '/portal': typeof PortalRoute
   '/setup': typeof SetupRoute
+  '/student-home': typeof StudentHomeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -68,8 +82,10 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/onboarding': typeof OnboardingRoute
   '/payment-callback': typeof PaymentCallbackRoute
+  '/policy': typeof PolicyRoute
   '/portal': typeof PortalRoute
   '/setup': typeof SetupRoute
+  '/student-home': typeof StudentHomeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -78,8 +94,10 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/onboarding': typeof OnboardingRoute
   '/payment-callback': typeof PaymentCallbackRoute
+  '/policy': typeof PolicyRoute
   '/portal': typeof PortalRoute
   '/setup': typeof SetupRoute
+  '/student-home': typeof StudentHomeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -89,8 +107,10 @@ export interface FileRouteTypes {
     | '/contact'
     | '/onboarding'
     | '/payment-callback'
+    | '/policy'
     | '/portal'
     | '/setup'
+    | '/student-home'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -98,8 +118,10 @@ export interface FileRouteTypes {
     | '/contact'
     | '/onboarding'
     | '/payment-callback'
+    | '/policy'
     | '/portal'
     | '/setup'
+    | '/student-home'
   id:
     | '__root__'
     | '/'
@@ -107,8 +129,10 @@ export interface FileRouteTypes {
     | '/contact'
     | '/onboarding'
     | '/payment-callback'
+    | '/policy'
     | '/portal'
     | '/setup'
+    | '/student-home'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,12 +141,21 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   OnboardingRoute: typeof OnboardingRoute
   PaymentCallbackRoute: typeof PaymentCallbackRoute
+  PolicyRoute: typeof PolicyRoute
   PortalRoute: typeof PortalRoute
   SetupRoute: typeof SetupRoute
+  StudentHomeRoute: typeof StudentHomeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/student-home': {
+      id: '/student-home'
+      path: '/student-home'
+      fullPath: '/student-home'
+      preLoaderRoute: typeof StudentHomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/setup': {
       id: '/setup'
       path: '/setup'
@@ -135,6 +168,13 @@ declare module '@tanstack/react-router' {
       path: '/portal'
       fullPath: '/portal'
       preLoaderRoute: typeof PortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/policy': {
+      id: '/policy'
+      path: '/policy'
+      fullPath: '/policy'
+      preLoaderRoute: typeof PolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/payment-callback': {
@@ -181,8 +221,10 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   OnboardingRoute: OnboardingRoute,
   PaymentCallbackRoute: PaymentCallbackRoute,
+  PolicyRoute: PolicyRoute,
   PortalRoute: PortalRoute,
   SetupRoute: SetupRoute,
+  StudentHomeRoute: StudentHomeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

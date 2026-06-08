@@ -122,7 +122,7 @@ function Portal() {
               <img src={logo} alt="" className="h-11 w-11 squircle bg-white p-1.5 object-contain" />
               <div>
                 <div className="text-xs uppercase tracking-wider opacity-90">{settings?.hostel_name ?? "SME Hostels"}</div>
-                <div className="text-lg font-bold leading-tight">Hi {student.full_name.split(" ")[0]} 👋</div>
+                <div className="text-lg font-bold leading-tight">Hello, {student.full_name.split(" ")[0]}</div>
                 <div className="text-xs opacity-90">{student.course} · {student.id}</div>
               </div>
             </div>
@@ -456,7 +456,9 @@ function StoreTab({ studentId }: { studentId: string }) {
           const out = !it.available || it.stock === 0;
           return (
             <div key={it.id} className="squircle bg-white p-3 shadow-soft animate-slide-up">
-              <div className="text-3xl">{it.emoji}</div>
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary mb-2">
+                <ShoppingBag className="h-5 w-5" />
+              </div>
               <div className="mt-1 text-sm font-semibold leading-tight">{it.name}</div>
               <div className="text-xs text-muted-foreground line-clamp-2">{it.description}</div>
               <div className="mt-2 flex items-center justify-between">
@@ -519,7 +521,9 @@ function StoreTab({ studentId }: { studentId: string }) {
                 const it = items.find((i: any) => i.id === id)!;
                 return (
                   <div key={id} className="flex items-center gap-3 rounded-2xl bg-muted/40 p-3">
-                    <div className="text-2xl">{it.emoji}</div>
+                    <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary shrink-0">
+                      <ShoppingBag className="h-4 w-4" />
+                    </div>
                     <div className="flex-1">
                       <div className="text-sm font-semibold">{it.name}</div>
                       <div className="text-xs text-muted-foreground">{fmtGHS(it.price)} × {qty} = {fmtGHS(it.price * qty)}</div>

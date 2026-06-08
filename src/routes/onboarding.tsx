@@ -268,7 +268,7 @@ function Onboarding() {
               roomFeeData={roomFeeData}
               hostelFee={hostelFee}
               settings={settings}
-              onEnter={() => navigate({ to: "/portal" })}
+              onEnter={() => navigate({ to: "/student-home" })}
             />
           )}
         </div>

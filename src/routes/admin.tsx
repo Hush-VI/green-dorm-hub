@@ -312,7 +312,7 @@ function StudentsPage() {
                 </div>
                 <div className="text-xs text-muted-foreground">{s.id} · {s.course}</div>
                 <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  <span>🚪 {s.room_no ?? "—"}</span><span>⚡ {s.meter_no ?? "—"}</span><span>📞 {s.phone}</span>
+                  <span>Room: {s.room_no ?? "—"}</span><span>Meter: {s.meter_no ?? "—"}</span><span>Tel: {s.phone}</span>
                 </div>
               </div>
               <div className="flex flex-col gap-1">
