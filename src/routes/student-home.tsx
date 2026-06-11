@@ -3,11 +3,11 @@ import { useEffect } from "react";
 import {
   LayoutDashboard, CreditCard, BookOpen, ShoppingBag,
   Zap, Phone, LogOut, ChevronRight, CheckCircle2,
-  AlertTriangle, DoorOpen, User,
+  AlertTriangle, DoorOpen, User, Loader2,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import building from "@/assets/building.jpg";
-import { useStudent, useSettings } from "@/lib/queries";
+import { useStudent, useSettings, useInitPayment } from "@/lib/queries";
 import { initials } from "@/lib/hostel-store";
 
 export const Route = createFileRoute("/student-home")({
@@ -46,6 +46,21 @@ function StudentHome() {
   const regStatus = student?.reg_status ?? "unpaid";
   const regFee = settings?.registration_fee ?? 100;
   const regPending = regStatus !== "paid";
+
+  // Payment gate — redirect to payment if not paid
+  const initPayment = useInitPayment();
+  function payNow() {
+    if (!student || !settings) return;
+    initPayment.mutate(
+      {
+        studentId: student.id,
+        email: `${student.username}@smehostels.com`,
+        amountGhs: settings.registration_fee,
+        callbackUrl: `${window.location.origin}/payment-callback`,
+      },
+      { onSuccess: ({ url }) => { window.location.href = url; } },
+    );
+  }
 
   // All icons use primary colour — amber is reserved for warning badges only
   const sections = [
@@ -94,6 +109,69 @@ function StudentHome() {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Payment gate — student must pay before accessing the dashboard
+  if (student && regPending) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-background">
+        <div className="relative overflow-hidden bg-gradient-primary pb-16 pt-8">
+          <img src={building} alt="" className="absolute inset-0 h-full w-full object-cover opacity-10 pointer-events-none" />
+          <div className="relative mx-auto max-w-lg px-4 sm:px-6">
+            <div className="flex items-center justify-between">
+              <img src={logo} alt="SME Hostels" className="h-10 w-auto squircle bg-white p-1.5 object-contain shadow-soft" />
+              <button onClick={signOut} className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-2 text-xs font-medium text-white backdrop-blur-md hover:bg-white/25">
+                <LogOut className="h-3.5 w-3.5" /> Sign out
+              </button>
+            </div>
+            <div className="mt-8 text-white">
+              <h1 className="text-2xl font-bold">One more step</h1>
+              <p className="mt-1 text-sm opacity-80">Complete your registration fee payment to access the hostel portal.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-lg px-4 sm:px-6 -mt-8 relative z-10 pb-10">
+          <div className="rounded-2xl bg-white shadow-glass p-6 space-y-5">
+            {/* Student info */}
+            <div className="flex items-center gap-4 rounded-xl bg-muted/40 p-4">
+              <div className="h-14 w-14 overflow-hidden rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                {(student as any).avatar_url
+                  ? <img src={(student as any).avatar_url} alt="" className="h-full w-full object-cover" />
+                  : <span className="text-lg font-bold text-primary">{initials(student.full_name)}</span>}
+              </div>
+              <div>
+                <div className="font-semibold">{student.full_name}</div>
+                <div className="text-xs text-muted-foreground">{student.id} · Room {student.room_no ?? "—"}</div>
+              </div>
+            </div>
+
+            {/* Fee details */}
+            <div className="rounded-xl border border-border p-4 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Registration fee</span>
+                <span className="text-2xl font-bold text-primary">GHS {regFee.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>One-time, non-refundable</span>
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 font-medium">Outstanding</span>
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-sky-50 border border-sky-100 p-3 text-xs text-sky-800">
+              Payment is processed securely via Paystack. You will be redirected back here after payment and an SMS confirmation will be sent to <strong>{student.phone}</strong>.
+            </div>
+
+            <button onClick={payNow} disabled={initPayment.isPending || !settings}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary py-3.5 text-sm font-semibold text-primary-foreground shadow-soft transition hover:opacity-95 disabled:opacity-50">
+              {initPayment.isPending
+                ? <><Loader2 className="h-4 w-4 animate-spin" /> Redirecting to Paystack…</>
+                : <><CreditCard className="h-4 w-4" /> Pay GHS {regFee.toLocaleString()} now</>}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

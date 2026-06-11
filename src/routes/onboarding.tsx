@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import building from "@/assets/building.jpg";
-import { useRegisterStudent, useRooms, useMeters, useSettings, useHostelFeeForRoom } from "@/lib/queries";
+import { useRegisterStudent, useRooms, useMeters, useSettings, useHostelFeeForRoom, useInitPayment } from "@/lib/queries";
 import { uploadToImgur } from "@/lib/imgur";
 
 export const Route = createFileRoute("/onboarding")({
@@ -355,6 +355,7 @@ function Onboarding() {
               roomFeeData={roomFeeData}
               hostelFee={hostelFee}
               settings={settings}
+              studentId={createdStudentId ?? ""}
               onEnter={() => navigate({ to: "/student-home" })}
             />
           )}
@@ -399,10 +400,12 @@ function SelectField({ icon: Icon, label, options, placeholder, ...props }: {
   );
 }
 
-function WhatsAppStep({ form, resolvedMeter, roomFeeData, hostelFee, settings, onEnter }: {
-  form: Form; resolvedMeter: string | null; roomFeeData: any; hostelFee: number; settings: any; onEnter: () => void;
+function WhatsAppStep({ form, resolvedMeter, roomFeeData, hostelFee, settings, studentId, onEnter }: {
+  form: Form; resolvedMeter: string | null; roomFeeData: any; hostelFee: number; settings: any;
+  studentId: string; onEnter: () => void;
 }) {
   const [joined, setJoined] = useState(false);
+  const initPayment = useInitPayment();
 
   return (
     <div className="space-y-5">
@@ -461,12 +464,27 @@ function WhatsAppStep({ form, resolvedMeter, roomFeeData, hostelFee, settings, o
         </div>
       </div>
 
-      <button onClick={onEnter} disabled={!joined}
+      <button
+        onClick={() => {
+          if (!joined || !settings) return;
+          initPayment.mutate(
+            {
+              studentId,
+              email: `${form.username}@smehostels.com`,
+              amountGhs: settings.registration_fee,
+              callbackUrl: `${window.location.origin}/payment-callback`,
+            },
+            { onSuccess: ({ url }) => { window.location.href = url; } },
+          );
+        }}
+        disabled={!joined || initPayment.isPending || !settings}
         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-soft transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50">
-        Enter portal <ArrowRight className="h-4 w-4" />
+        {initPayment.isPending
+          ? <><Loader2 className="h-4 w-4 animate-spin" /> Redirecting to Paystack…</>
+          : <><CreditCard className="h-4 w-4" /> Pay GHS {settings?.registration_fee?.toLocaleString() ?? "…"} registration fee</>}
       </button>
       {!joined && (
-        <p className="text-center text-xs text-muted-foreground">You must join the WhatsApp channel to proceed.</p>
+        <p className="text-center text-xs text-muted-foreground">Join the WhatsApp channel above to proceed to payment.</p>
       )}
     </div>
   );

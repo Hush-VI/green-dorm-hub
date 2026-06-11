@@ -34,7 +34,7 @@ function PaymentCallback() {
           setStatus("success");
           setMessage(`GHS ${result.amountGhs?.toFixed(2)} confirmed. SMS sent to your phone. Redirecting…`);
         }
-        setTimeout(() => navigate({ to: "/portal" }), 3000);
+        setTimeout(() => navigate({ to: "/student-home" }), 3000);
       },
       onError: (e) => {
         setStatus("failed");

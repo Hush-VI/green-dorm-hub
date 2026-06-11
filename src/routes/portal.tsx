@@ -57,6 +57,13 @@ function Portal() {
     }
   }, [isLoading, currentId, student]);
 
+  // If student hasn't paid, send them to student-home which handles the payment gate
+  useEffect(() => {
+    if (!isLoading && student && student.reg_status !== "paid") {
+      nav({ to: "/student-home" });
+    }
+  }, [isLoading, student]);
+
   if (!currentId) return null;
 
   if (isLoading) {
@@ -463,9 +470,14 @@ function StoreTab({ studentId }: { studentId: string }) {
           const out = !it.available || it.stock === 0;
           return (
             <div key={it.id} className="squircle bg-white p-3 shadow-soft animate-slide-up">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary mb-2">
-                <ShoppingBag className="h-5 w-5" />
-              </div>
+              {(it as any).image_url ? (
+                <img src={(it as any).image_url} alt={it.name}
+                  className="h-24 w-full rounded-xl object-cover mb-2" />
+              ) : (
+                <div className="grid h-16 w-full place-items-center rounded-xl bg-primary/10 text-primary mb-2">
+                  <ShoppingBag className="h-6 w-6" />
+                </div>
+              )}
               <div className="mt-1 text-sm font-semibold leading-tight">{it.name}</div>
               <div className="text-xs text-muted-foreground line-clamp-2">{it.description}</div>
               <div className="mt-2 flex items-center justify-between">

@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import {
   LayoutDashboard, Users, DoorOpen, Zap, Wallet, Building2, ClipboardList,
   ShoppingBag, MessageSquare, BarChart3, Settings as SettingsIcon, LogOut,
   ChevronLeft, ChevronRight, Bell, Search, Plus, Edit3, Trash2, X, Save,
   CheckCircle2, XCircle, AlertTriangle, Copy, Check, Send, Image as ImageIcon,
-  Video, FileText, ArrowRight, MoreHorizontal, Lock,
+  Video, FileText, ArrowRight, MoreHorizontal, Lock, Loader2, Upload,
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar,
@@ -895,7 +895,7 @@ function StoreAdminPage() {
                           return <div key={i} className="flex justify-between"><span>{it?.emoji} {it?.name} × {l.qty}</span><span className="text-muted-foreground">{fmtGHS((it?.price ?? 0) * l.qty)}</span></div>;
                         })}
                       </div>
-                      {o.note && <div className="mt-2 rounded-xl bg-amber-50 p-2 text-xs text-amber-800">📝 {o.note}</div>}
+                      {o.note && <div className="mt-2 rounded-xl bg-amber-50 p-2 text-xs text-amber-800">Note: {o.note}</div>}
                       <div className="mt-3 flex flex-wrap gap-2">
                         {o.status === "pending" && <button onClick={() => updateStatusMut.mutate({ id: o.id, status: "confirmed" })} className="rounded-full bg-sky-500 px-3 py-1.5 text-xs font-medium text-white">Confirm</button>}
                         {o.status === "confirmed" && <button onClick={() => updateStatusMut.mutate({ id: o.id, status: "ready" })} className="rounded-full bg-violet-500 px-3 py-1.5 text-xs font-medium text-white">Mark Ready</button>}
@@ -921,7 +921,13 @@ function StoreAdminPage() {
           <div className="space-y-2">
             {items.map((it) => (
               <div key={it.id} className="squircle bg-white p-4 shadow-soft flex items-center gap-3">
-                <div className="text-2xl">{it.emoji}</div>
+                {(it as any).image_url ? (
+                  <img src={(it as any).image_url} alt={it.name} className="h-14 w-14 rounded-xl object-cover border border-border shrink-0" />
+                ) : (
+                  <div className="grid h-14 w-14 place-items-center rounded-xl bg-primary/10 text-primary shrink-0">
+                    <ShoppingBag className="h-5 w-5" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-bold">{it.name}</div>
                   <div className="text-xs text-muted-foreground truncate">{it.description}</div>
@@ -955,22 +961,84 @@ function OrderStatusPill({ status }: { status: string }) {
 }
 
 function ItemModal({ initial, onClose, onSave }: { initial?: StoreItemRow; onClose: () => void; onSave: (it: Partial<StoreItemRow>) => void }) {
-  const [f, setF] = useState({ name: initial?.name ?? "", emoji: initial?.emoji ?? "🛒", description: initial?.description ?? "", price: initial?.price ?? 0, unit: initial?.unit ?? "piece", stock: initial?.stock ?? 0, category: initial?.category ?? "Other", available: initial?.available ?? true });
+  const [f, setF] = useState({
+    name: initial?.name ?? "",
+    description: initial?.description ?? "",
+    price: initial?.price ?? 0,
+    unit: initial?.unit ?? "piece",
+    stock: initial?.stock ?? 0,
+    category: initial?.category ?? "Other",
+    available: initial?.available ?? true,
+    image_url: (initial as any)?.image_url ?? "",
+  });
+  const [imgPreview, setImgPreview] = useState<string | null>((initial as any)?.image_url ?? null);
+  const [imgUploading, setImgUploading] = useState(false);
+  const [imgError, setImgError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function handleImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setImgError("Please select an image file."); return; }
+    if (file.size > 5 * 1024 * 1024) { setImgError("Image must be under 5MB."); return; }
+    setImgError(null);
+    setImgPreview(URL.createObjectURL(file));
+    setImgUploading(true);
+    try {
+      const { uploadToImgur } = await import("@/lib/imgur");
+      const url = await uploadToImgur(file);
+      setF((prev) => ({ ...prev, image_url: url }));
+    } catch (err) {
+      setImgError(err instanceof Error ? err.message : "Upload failed.");
+      setImgPreview(null);
+    } finally {
+      setImgUploading(false);
+    }
+  }
+
   return (
     <Modal title={initial ? "Edit Item" : "Add Item"} onClose={onClose}>
+      {/* Image upload */}
+      <div className="mb-4">
+        <label className="mb-1 block text-xs font-medium">Product image</label>
+        <input ref={fileRef} type="file" accept="image/*" onChange={handleImage} className="hidden" />
+        {imgPreview ? (
+          <div className="flex items-center gap-3">
+            <img src={imgPreview} alt="" className="h-20 w-20 rounded-xl object-cover border border-border shadow-soft" />
+            <div className="flex-1">
+              {imgUploading && <div className="flex items-center gap-2 text-xs text-primary"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading…</div>}
+              {f.image_url && !imgUploading && <div className="text-xs text-primary font-medium">Image uploaded</div>}
+              {imgError && <div className="text-xs text-destructive">{imgError}</div>}
+              <button type="button" onClick={() => { setImgPreview(null); setF((p) => ({ ...p, image_url: "" })); setImgError(null); }}
+                className="mt-1.5 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted/70">Remove</button>
+            </div>
+          </div>
+        ) : (
+          <button type="button" onClick={() => fileRef.current?.click()}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted/30 py-4 text-xs text-muted-foreground hover:border-primary/40 hover:bg-primary/5 transition">
+            <Upload className="h-4 w-4" /> Upload product image (optional)
+          </button>
+        )}
+        {imgError && !imgPreview && <div className="mt-1 text-xs text-destructive">{imgError}</div>}
+      </div>
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <FormField label="Name" value={f.name} onChange={(v) => setF({ ...f, name: v })} />
-        <FormField label="Emoji" value={f.emoji} onChange={(v) => setF({ ...f, emoji: v })} />
-        <FormField label="Description" value={f.description} onChange={(v) => setF({ ...f, description: v })} />
-        <FormField label="Price" type="number" value={String(f.price)} onChange={(v) => setF({ ...f, price: Number(v) })} />
         <FormField label="Unit" value={f.unit} onChange={(v) => setF({ ...f, unit: v })} />
+        <FormField label="Description" value={f.description} onChange={(v) => setF({ ...f, description: v })} />
+        <FormField label="Price (GHS)" type="number" value={String(f.price)} onChange={(v) => setF({ ...f, price: Number(v) })} />
         <FormField label="Stock" type="number" value={String(f.stock)} onChange={(v) => setF({ ...f, stock: Number(v) })} />
         <FormSelect label="Category" value={f.category} onChange={(v) => setF({ ...f, category: v ?? "Other" })} options={["Water","Drinks","Food","Toiletries","Stationery","Other"]} />
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.available} onChange={(e) => setF({ ...f, available: e.target.checked })} className="h-4 w-4" /> Available</label>
+        <label className="flex items-center gap-2 text-sm col-span-full">
+          <input type="checkbox" checked={f.available} onChange={(e) => setF({ ...f, available: e.target.checked })} className="h-4 w-4" /> Available for purchase
+        </label>
       </div>
       <div className="mt-5 flex justify-end gap-2">
         <button onClick={onClose} className="rounded-full border border-border bg-white px-4 py-2 text-sm">Cancel</button>
-        <button onClick={() => onSave(f)} className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Save</button>
+        <button onClick={() => onSave(f)} disabled={imgUploading}
+          className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
+          {imgUploading ? "Uploading…" : "Save"}
+        </button>
       </div>
     </Modal>
   );
