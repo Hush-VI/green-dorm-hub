@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import logo from "@/assets/logo.jpg";
 import { fmtGHS, fmtTime, fmtDate, initials } from "@/lib/hostel-store";
 import type { StudentRow, RoomRow, MeterRow, StoreItemRow, OrderRow } from "@/lib/database.types";
+import { ALL_COURSES, LEVELS } from "@/lib/constants";
 import {
   useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent,
   useRooms, useCreateRoom, useUpdateRoom, useDeleteRoom,
@@ -372,8 +373,8 @@ function StudentModal({ initial, rooms, meters, onClose, onSave }: {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <FormField label="Full Name" value={f.full_name} onChange={(v) => setF({ ...f, full_name: v })} />
         <FormField label="Student ID" value={f.id} onChange={(v) => setF({ ...f, id: v })} disabled={!!initial} />
-        <FormField label="Course" value={f.course} onChange={(v) => setF({ ...f, course: v })} />
-        <FormField label="Phone" value={f.phone} onChange={(v) => setF({ ...f, phone: v })} />
+        <FormSelect label="Programme / Course" value={f.course} onChange={(v) => setF({ ...f, course: v ?? "" })} options={["", ...ALL_COURSES]} />
+        <FormSelect label="Level" value={f.level} onChange={(v) => setF({ ...f, level: v ?? "100" })} options={LEVELS} />        <FormField label="Phone" value={f.phone} onChange={(v) => setF({ ...f, phone: v })} />
         <FormField label="WhatsApp" value={f.whatsapp} onChange={(v) => setF({ ...f, whatsapp: v })} />
         <FormField label="Guardian Name" value={f.guardian_name} onChange={(v) => setF({ ...f, guardian_name: v })} />
         <FormField label="Guardian Phone" value={f.guardian_phone} onChange={(v) => setF({ ...f, guardian_phone: v })} />

@@ -9,6 +9,7 @@ import logo from "@/assets/logo.jpg";
 import building from "@/assets/building.jpg";
 import { useRegisterStudent, useRooms, useMeters, useSettings, useHostelFeeForRoom, useInitPayment } from "@/lib/queries";
 import { uploadToImgur } from "@/lib/imgur";
+import { ALL_COURSES, LEVELS } from "@/lib/constants";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -181,9 +182,10 @@ function Onboarding() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field icon={BookOpen} label="Course / Program" placeholder="BSc Computer Science" value={form.course} onChange={upd("course")} required />
+                <SelectField icon={BookOpen} label="Programme / Course" value={form.course} onChange={upd("course")} required placeholder="Select your programme"
+                  options={ALL_COURSES.map((c) => ({ value: c, label: c }))} />
                 <SelectField icon={Layers} label="Level" value={form.level} onChange={upd("level")} required placeholder="Select level"
-                  options={["100", "200", "300", "400", "500", "600"].map((o) => ({ value: o, label: `Level ${o}` }))} />
+                  options={LEVELS.map((l) => ({ value: l, label: `Level ${l}` }))} />
               </div>
 
               <SelectField icon={User} label="Gender" value={form.gender} onChange={upd("gender")} required placeholder="Select gender"
