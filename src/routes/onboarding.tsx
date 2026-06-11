@@ -24,12 +24,13 @@ type Step = 1 | 2 | 3; // 1=details, 2=policy, 3=payment
 
 type Form = {
   fullName: string; phone: string; whatsapp: string; course: string;
-  level: string; roomNo: string; guardianName: string; guardianPhone: string; username: string; password: string;
+  level: string; roomNo: string; guardianName: string; guardianPhone: string;
+  username: string; password: string; gender: string;
 };
 
 const empty: Form = {
   fullName: "", phone: "", whatsapp: "", course: "", level: "",
-  roomNo: "", guardianName: "", guardianPhone: "", username: "", password: "",
+  roomNo: "", guardianName: "", guardianPhone: "", username: "", password: "", gender: "",
 };
 
 function Onboarding() {
@@ -110,6 +111,7 @@ function Onboarding() {
         password: form.password,
         accepted_at: new Date().toISOString(),
         avatar_url: avatarUrl ?? undefined,
+        gender: form.gender as "male" | "female" | "other" | undefined,
       },
       {
         onSuccess: (student) => {
@@ -183,6 +185,13 @@ function Onboarding() {
                 <SelectField icon={Layers} label="Level" value={form.level} onChange={upd("level")} required placeholder="Select level"
                   options={["100", "200", "300", "400", "500", "600"].map((o) => ({ value: o, label: `Level ${o}` }))} />
               </div>
+
+              <SelectField icon={User} label="Gender" value={form.gender} onChange={upd("gender")} required placeholder="Select gender"
+                options={[
+                  { value: "male", label: "Male" },
+                  { value: "female", label: "Female" },
+                  { value: "other", label: "Other" },
+                ]} />
 
               {/* Room dropdown — populated from DB */}
               <div className="grid gap-4 sm:grid-cols-2">
