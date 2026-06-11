@@ -113,6 +113,7 @@ export const registerStudent = createServerFn({ method: "POST" })
       username: z.string().min(1),
       password: z.string().min(6),
       accepted_at: z.string(),
+      avatar_url: z.string().url().optional(),
     }),
   )
   .handler(async ({ data }) => {
@@ -149,6 +150,7 @@ export const registerStudent = createServerFn({ method: "POST" })
         check_status: "out",
         policy_accepted: true,
         accepted_at: data.accepted_at,
+        avatar_url: data.avatar_url ?? null,
       })
       .select()
       .single();

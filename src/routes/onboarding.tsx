@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   User, Phone, MessageCircle, BookOpen, Layers, DoorOpen, ShieldCheck,
   AtSign, Lock, ArrowRight, ArrowLeft, CheckCircle2, FileText, Sparkles,
-  Zap, CreditCard, Loader2,
+  Zap, CreditCard, Loader2, Camera, Upload, X,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import building from "@/assets/building.jpg";
 import { useRegisterStudent, useRooms, useMeters, useSettings, useHostelFeeForRoom } from "@/lib/queries";
+import { uploadToImgur } from "@/lib/imgur";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -37,6 +38,11 @@ function Onboarding() {
   const [form, setForm] = useState<Form>(empty);
   const [accepted, setAccepted] = useState(false);
   const [createdStudentId, setCreatedStudentId] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: rooms = [], isLoading: roomsLoading, error: roomsError } = useRooms();
   const { data: meters = [] } = useMeters();
@@ -50,6 +56,26 @@ function Onboarding() {
 
   const upd = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setAvatarError("Please select an image file."); return; }
+    if (file.size > 5 * 1024 * 1024) { setAvatarError("Image must be under 5MB."); return; }
+
+    setAvatarError(null);
+    setAvatarPreview(URL.createObjectURL(file));
+    setAvatarUploading(true);
+    try {
+      const url = await uploadToImgur(file);
+      setAvatarUrl(url);
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : "Upload failed. Try again.");
+      setAvatarPreview(null);
+    } finally {
+      setAvatarUploading(false);
+    }
+  }
 
   // Auto-resolve meter from selected room
   const resolvedMeter = useMemo(() => {
@@ -83,6 +109,7 @@ function Onboarding() {
         username: form.username,
         password: form.password,
         accepted_at: new Date().toISOString(),
+        avatar_url: avatarUrl ?? undefined,
       },
       {
         onSuccess: (student) => {
@@ -204,8 +231,59 @@ function Onboarding() {
                 </div>
               </div>
 
-              <button type="submit"
-                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-soft transition hover:opacity-95 active:scale-[.98]">
+              {/* ── Profile photo upload ── */}
+              <div className="rounded-2xl border border-border bg-white/60 p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Camera className="h-4 w-4 text-primary" /> Profile photo
+                  <span className="ml-auto text-xs font-normal text-muted-foreground">Required</span>
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoSelect}
+                  className="hidden"
+                />
+
+                {!avatarPreview ? (
+                  <button type="button" onClick={() => fileInputRef.current?.click()}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-white/50 py-6 text-sm text-muted-foreground hover:border-primary/40 hover:bg-primary/5 transition">
+                    <Upload className="h-5 w-5" />
+                    <span>Tap to upload a clear photo of yourself</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <img src={avatarPreview} alt="Preview"
+                      className="h-20 w-20 rounded-2xl object-cover border-2 border-border shadow-soft" />
+                    <div className="flex-1">
+                      {avatarUploading && (
+                        <div className="flex items-center gap-2 text-sm text-primary">
+                          <Loader2 className="h-4 w-4 animate-spin" /> Uploading…
+                        </div>
+                      )}
+                      {avatarUrl && !avatarUploading && (
+                        <div className="flex items-center gap-2 text-sm text-primary font-medium">
+                          <CheckCircle2 className="h-4 w-4" /> Photo uploaded
+                        </div>
+                      )}
+                      {avatarError && (
+                        <div className="text-sm text-destructive">{avatarError}</div>
+                      )}
+                      <button type="button" onClick={() => { setAvatarPreview(null); setAvatarUrl(null); setAvatarError(null); }}
+                        className="mt-2 inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground hover:bg-muted/70">
+                        <X className="h-3 w-3" /> Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {avatarError && !avatarPreview && (
+                  <div className="mt-2 text-xs text-destructive">{avatarError}</div>
+                )}
+              </div>
+
+              <button type="submit" disabled={!avatarUrl || avatarUploading}
+                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-soft transition hover:opacity-95 active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed">
                 Continue <ArrowRight className="h-4 w-4" />
               </button>
             </form>

@@ -109,9 +109,11 @@ function StudentHome() {
             <img src={logo} alt="SME Hostels" className="h-10 w-auto squircle bg-white p-1.5 object-contain shadow-soft" />
             <div className="flex items-center gap-2">
               {student && (
-                <div className="hidden sm:flex items-center gap-2 rounded-full bg-white/15 pl-3 pr-4 py-1.5 text-sm text-white backdrop-blur-md">
-                  <div className="grid h-7 w-7 place-items-center rounded-full bg-white/25 text-xs font-bold">
-                    {initials(student.full_name)}
+                <div className="hidden sm:flex items-center gap-2 rounded-full bg-white/15 pl-2 pr-4 py-1.5 text-sm text-white backdrop-blur-md">
+                  <div className="h-7 w-7 overflow-hidden rounded-full bg-white/25 text-xs font-bold flex items-center justify-center shrink-0">
+                    {(student as any).avatar_url
+                      ? <img src={(student as any).avatar_url} alt="" className="h-full w-full object-cover" />
+                      : initials(student.full_name)}
                   </div>
                   <span className="font-medium">{student.full_name.split(" ")[0]}</span>
                 </div>

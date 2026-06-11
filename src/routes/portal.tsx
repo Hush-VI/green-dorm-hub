@@ -127,8 +127,10 @@ function Portal() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setTab("profile")} className="grid h-10 w-10 place-items-center rounded-full bg-white/20 text-sm font-bold backdrop-blur-md hover:bg-white/30">
-                {initials(student.full_name)}
+              <button onClick={() => setTab("profile")} className="h-10 w-10 overflow-hidden rounded-full bg-white/20 backdrop-blur-md hover:bg-white/30 flex items-center justify-center text-sm font-bold">
+                {(student as any).avatar_url
+                  ? <img src={(student as any).avatar_url} alt="" className="h-full w-full object-cover" />
+                  : initials(student.full_name)}
               </button>
               {switchBtn}
             </div>
@@ -253,9 +255,14 @@ function ProfileTab({ studentId }: { studentId: string }) {
   return (
     <div className="space-y-4">
       <div className="squircle bg-white p-6 text-center shadow-soft animate-slide-up">
-        <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-gradient-primary text-2xl font-bold text-white shadow-soft">
-          {initials(s.full_name)}
-        </div>
+        {(s as any).avatar_url ? (
+          <img src={(s as any).avatar_url} alt={s.full_name}
+            className="mx-auto h-20 w-20 rounded-full object-cover border-4 border-primary/20 shadow-soft" />
+        ) : (
+          <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-gradient-primary text-2xl font-bold text-white shadow-soft">
+            {initials(s.full_name)}
+          </div>
+        )}
         <div className="mt-3 text-lg font-bold">{s.full_name}</div>
         <div className="text-xs text-muted-foreground">{s.id}</div>
         <div className="mt-3 flex flex-wrap justify-center gap-2">

@@ -304,7 +304,11 @@ function StudentsPage() {
         {filtered.map((s) => (
           <div key={s.id} className="squircle bg-white p-4 shadow-soft animate-slide-up">
             <div className="flex items-start gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-gradient-primary text-sm font-bold text-white">{initials(s.full_name)}</div>
+              <div className="grid h-11 w-11 overflow-hidden rounded-full bg-gradient-primary text-sm font-bold text-white shrink-0">
+                {(s as any).avatar_url
+                  ? <img src={(s as any).avatar_url} alt="" className="h-full w-full object-cover" />
+                  : <span className="grid h-full w-full place-items-center">{initials(s.full_name)}</span>}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="text-sm font-bold truncate">{s.full_name}</div>

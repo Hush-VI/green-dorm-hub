@@ -10,3 +10,4 @@ enabled = true
 SUPABASE_URL = "https://ahnkkahwdyrdnxugnzjt.supabase.co"
 MNOTIFY_SENDER_ID = "SME HOSTEL"
 ADMIN_SETUP_KEY = "sme-setup-2024"
+VITE_IMGUR_CLIENT_ID = "f121133fedaa48b"
