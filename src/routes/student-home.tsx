@@ -109,14 +109,18 @@ function StudentHome() {
             <img src={logo} alt="SME Hostels" className="h-10 w-auto squircle bg-white p-1.5 object-contain shadow-soft" />
             <div className="flex items-center gap-2">
               {student && (
-                <div className="hidden sm:flex items-center gap-2 rounded-full bg-white/15 pl-2 pr-4 py-1.5 text-sm text-white backdrop-blur-md">
-                  <div className="h-7 w-7 overflow-hidden rounded-full bg-white/25 text-xs font-bold flex items-center justify-center shrink-0">
+                <>
+                  {/* Avatar — always visible */}
+                  <div className="h-9 w-9 overflow-hidden rounded-full bg-white/25 text-xs font-bold flex items-center justify-center shrink-0 border-2 border-white/30">
                     {(student as any).avatar_url
                       ? <img src={(student as any).avatar_url} alt="" className="h-full w-full object-cover" />
-                      : initials(student.full_name)}
+                      : <span className="text-white">{initials(student.full_name)}</span>}
                   </div>
-                  <span className="font-medium">{student.full_name.split(" ")[0]}</span>
-                </div>
+                  {/* Name — desktop only */}
+                  <div className="hidden sm:flex items-center rounded-full bg-white/15 px-3 py-1.5 text-sm text-white backdrop-blur-md">
+                    <span className="font-medium">{student.full_name.split(" ")[0]}</span>
+                  </div>
+                </>
               )}
               <button onClick={signOut}
                 className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-2 text-xs font-medium text-white backdrop-blur-md hover:bg-white/25 transition">
