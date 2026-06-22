@@ -476,3 +476,53 @@ export function useTestSms() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+// ── Payment Receipts ──────────────────────────────────────────────────────────
+
+import { submitReceipt, getStudentReceipts, getAllReceipts, reviewReceipt } from "./api/receipts.functions";
+
+export const QK_RECEIPTS = {
+  student: (id: string) => ["receipts", id] as const,
+  all: (status?: string) => ["receipts", "all", status ?? "all"] as const,
+};
+
+export function useStudentReceipts(studentId: string) {
+  return useQuery({
+    queryKey: QK_RECEIPTS.student(studentId),
+    queryFn: () => getStudentReceipts({ data: { studentId } }),
+    enabled: !!studentId,
+  });
+}
+
+export function useAllReceipts(status?: string) {
+  return useQuery({
+    queryKey: QK_RECEIPTS.all(status),
+    queryFn: () => getAllReceipts({ data: { status } }),
+  });
+}
+
+export function useSubmitReceipt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof submitReceipt>[0]["data"]) =>
+      submitReceipt({ data }),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: QK_RECEIPTS.student(r.student_id) });
+      toast.success("Receipt submitted — management will review it shortly.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useReviewReceipt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof reviewReceipt>[0]["data"]) =>
+      reviewReceipt({ data }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: QK_RECEIPTS.all() });
+      toast.success("Receipt reviewed");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}

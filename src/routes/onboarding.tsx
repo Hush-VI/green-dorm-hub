@@ -468,22 +468,13 @@ function WhatsAppStep({ form, resolvedMeter, roomFeeData, hostelFee, settings, s
 
       <button
         onClick={() => {
-          if (!joined || !settings) return;
-          initPayment.mutate(
-            {
-              studentId,
-              email: `${form.username}@smehostels.com`,
-              amountGhs: settings.registration_fee,
-              callbackUrl: `${window.location.origin}/payment-callback`,
-            },
-            { onSuccess: ({ url }) => { window.location.href = url; } },
-          );
+          if (!joined) return;
+          // Paystack payment disabled — go straight to portal
+          navigate({ to: "/student-home" });
         }}
-        disabled={!joined || initPayment.isPending || !settings}
+        disabled={!joined}
         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-soft transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50">
-        {initPayment.isPending
-          ? <><Loader2 className="h-4 w-4 animate-spin" /> Redirecting to Paystack…</>
-          : <><CreditCard className="h-4 w-4" /> Pay GHS {settings?.registration_fee?.toLocaleString() ?? "…"} registration fee</>}
+        <ArrowRight className="h-4 w-4" /> Enter portal
       </button>
       {!joined && (
         <p className="text-center text-xs text-muted-foreground">Join the WhatsApp channel above to proceed to payment.</p>

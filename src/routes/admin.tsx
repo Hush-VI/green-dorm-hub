@@ -29,6 +29,7 @@ import {
   useRoomPricing, useUpsertRoomPricing,
   useResetStudentPassword,
   useTestSms,
+  useAllReceipts, useReviewReceipt,
 } from "@/lib/queries";
 
 export const Route = createFileRoute("/admin")({
@@ -39,7 +40,7 @@ export const Route = createFileRoute("/admin")({
 type Nav =
   | "dashboard" | "students" | "rooms" | "meters"
   | "regfees" | "hostelfees" | "checkins"
-  | "store" | "sms" | "reports" | "settings";
+  | "store" | "sms" | "reports" | "settings" | "receipts";
 
 const NAV: { key: Nav; label: string; icon: typeof LayoutDashboard }[] = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -52,6 +53,7 @@ const NAV: { key: Nav; label: string; icon: typeof LayoutDashboard }[] = [
   { key: "store", label: "Store", icon: ShoppingBag },
   { key: "sms", label: "SMS Center", icon: MessageSquare },
   { key: "reports", label: "Reports", icon: BarChart3 },
+  { key: "receipts", label: "Receipts", icon: Receipt },
   { key: "settings", label: "Settings", icon: SettingsIcon },
 ];
 

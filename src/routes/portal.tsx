@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import {
   Home, User, Wallet, ShoppingBag, MoreHorizontal, LogOut, Bell,
   CheckCircle2, XCircle, ArrowRight, Copy, Check, Plus, Minus, Trash2,
   Zap, History, ChevronRight, Phone, MessageCircle, DoorOpen, BookOpen,
   Edit3, Save, X, ChevronDown, ChevronUp, AlertTriangle, Sparkles,
-  Building2, Receipt, ShieldCheck,
+  Building2, Receipt, ShieldCheck, Upload, Loader2, Camera,
 } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.jpg";
@@ -17,6 +17,7 @@ import {
   useStoreItems, useOrders, usePlaceOrder,
   useMeters, useStudents,
   useElectricityLogs, useLogElectricityTopup,
+  useStudentReceipts, useSubmitReceipt,
 } from "@/lib/queries";
 
 export const Route = createFileRoute("/portal")({
@@ -57,12 +58,12 @@ function Portal() {
     }
   }, [isLoading, currentId, student]);
 
-  // If student hasn't paid, send them to student-home which handles the payment gate
-  useEffect(() => {
-    if (!isLoading && student && student.reg_status !== "paid") {
-      nav({ to: "/student-home" });
-    }
-  }, [isLoading, student]);
+  // Payment gate disabled — uncomment to re-enable when ready
+  // useEffect(() => {
+  //   if (!isLoading && student && student.reg_status !== "paid") {
+  //     nav({ to: "/student-home" });
+  //   }
+  // }, [isLoading, student]);
 
   if (!currentId) return null;
 
@@ -368,6 +369,145 @@ function FeesTab({ studentId }: { studentId: string }) {
           <span>{settings.contact_phone}</span>
         </a>
       </SectionCard>
+
+      <ReceiptUploadSection studentId={studentId} />
+    </div>
+  );
+}
+
+function ReceiptUploadSection({ studentId }: { studentId: string }) {
+  const { data: receipts = [] } = useStudentReceipts(studentId);
+  const submitReceiptMut = useSubmitReceipt();
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const [uploading, setUploading] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("Registration fee");
+  const [preview, setPreview] = useState<string | null>(null);
+  const [imgUrl, setImgUrl] = useState<string | null>(null);
+  const [imgError, setImgError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+      setImgError("Please select an image file."); return;
+    }
+    if (file.size > 10 * 1024 * 1024) { setImgError("File must be under 10MB."); return; }
+    setImgError(null);
+    setPreview(URL.createObjectURL(file));
+    setUploading(true);
+    try {
+      const { uploadToImgur } = await import("@/lib/imgur");
+      const url = await uploadToImgur(file);
+      setImgUrl(url);
+    } catch (err) {
+      setImgError(err instanceof Error ? err.message : "Upload failed.");
+      setPreview(null);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function submit() {
+    if (!imgUrl) return;
+    submitReceiptMut.mutate(
+      { student_id: studentId, image_url: imgUrl, amount: Number(amount) || undefined, description: description || undefined },
+      {
+        onSuccess: () => {
+          setPreview(null); setImgUrl(null); setAmount(""); setShowForm(false); setImgError(null);
+          if (fileRef.current) fileRef.current.value = "";
+        },
+      },
+    );
+  }
+
+  const statusStyle = (s: string) => s === "verified" ? "bg-primary/10 text-primary" : s === "rejected" ? "bg-destructive/10 text-destructive" : "bg-amber-100 text-amber-700";
+
+  return (
+    <div className="squircle bg-white p-5 shadow-soft">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <div className="text-base font-bold">Payment Receipts</div>
+          <div className="text-xs text-muted-foreground">Upload proof of payment for management to verify</div>
+        </div>
+        <button onClick={() => setShowForm((v) => !v)}
+          className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20">
+          <Upload className="h-3.5 w-3.5" /> {showForm ? "Cancel" : "Upload receipt"}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="border-t border-border pt-4 space-y-3 mb-4">
+          <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+
+          {!preview ? (
+            <button type="button" onClick={() => fileRef.current?.click()}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted/30 py-5 text-sm text-muted-foreground hover:border-primary/40 hover:bg-primary/5 transition">
+              <Camera className="h-5 w-5" /> Tap to take photo or select receipt image
+            </button>
+          ) : (
+            <div className="flex items-center gap-3 rounded-xl bg-muted/30 p-3">
+              <img src={preview} alt="" className="h-16 w-16 rounded-lg object-cover border border-border" />
+              <div className="flex-1">
+                {uploading && <div className="flex items-center gap-1.5 text-xs text-primary"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading…</div>}
+                {imgUrl && !uploading && <div className="text-xs text-primary font-medium flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> Image ready</div>}
+                {imgError && <div className="text-xs text-destructive">{imgError}</div>}
+                <button onClick={() => { setPreview(null); setImgUrl(null); if (fileRef.current) fileRef.current.value = ""; }}
+                  className="mt-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">Remove</button>
+              </div>
+            </div>
+          )}
+          {imgError && !preview && <div className="text-xs text-destructive">{imgError}</div>}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium">Amount paid (GHS)</label>
+              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 100"
+                className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium">Payment type</label>
+              <select value={description} onChange={(e) => setDescription(e.target.value)}
+                className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30">
+                <option>Registration fee</option>
+                <option>Hostel fee</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <button onClick={submit} disabled={!imgUrl || uploading || submitReceiptMut.isPending}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+            {submitReceiptMut.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</> : "Submit receipt for review"}
+          </button>
+        </div>
+      )}
+
+      {receipts.length === 0 && !showForm && (
+        <div className="text-sm text-muted-foreground">No receipts submitted yet.</div>
+      )}
+
+      {receipts.length > 0 && (
+        <div className="space-y-3">
+          {receipts.map((r: any) => (
+            <div key={r.id} className="flex items-start gap-3 rounded-xl border border-border p-3">
+              <img src={r.image_url} alt="Receipt" className="h-14 w-14 rounded-lg object-cover border border-border cursor-pointer"
+                onClick={() => window.open(r.image_url, "_blank")} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-medium">{r.description ?? "Payment"}</span>
+                  {r.amount && <span className="text-xs text-muted-foreground">GHS {Number(r.amount).toLocaleString()}</span>}
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${statusStyle(r.status)}`}>{r.status}</span>
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">{fmtDate(new Date(r.uploaded_at).getTime())}</div>
+                {r.admin_note && <div className="mt-1 text-xs text-muted-foreground italic">Note: {r.admin_note}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
