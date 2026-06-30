@@ -5,7 +5,7 @@ import {
   ShoppingBag, MessageSquare, BarChart3, Settings as SettingsIcon, LogOut,
   ChevronLeft, ChevronRight, Bell, Search, Plus, Edit3, Trash2, X, Save,
   CheckCircle2, XCircle, AlertTriangle, Copy, Check, Send, Image as ImageIcon,
-  Video, FileText, ArrowRight, MoreHorizontal, Lock, Loader2, Upload,
+  Video, FileText, ArrowRight, MoreHorizontal, Lock, Loader2, Upload, Receipt,
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar,
