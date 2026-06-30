@@ -58,12 +58,12 @@ function Portal() {
     }
   }, [isLoading, currentId, student]);
 
-  // Payment gate disabled — uncomment to re-enable when ready
-  // useEffect(() => {
-  //   if (!isLoading && student && student.reg_status !== "paid") {
-  //     nav({ to: "/student-home" });
-  //   }
-  // }, [isLoading, student]);
+  // Students must be verified by admin before accessing the portal
+  useEffect(() => {
+    if (!isLoading && student && student.reg_status !== "paid") {
+      nav({ to: "/student-home" });
+    }
+  }, [isLoading, student]);
 
   if (!currentId) return null;
 

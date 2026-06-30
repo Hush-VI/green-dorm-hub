@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import building from "@/assets/building.jpg";
-import { useStudent, useSettings, useInitPayment } from "@/lib/queries";
+import { useStudent, useSettings } from "@/lib/queries";
 import { initials } from "@/lib/hostel-store";
 
 export const Route = createFileRoute("/student-home")({
@@ -46,21 +46,6 @@ function StudentHome() {
   const regStatus = student?.reg_status ?? "unpaid";
   const regFee = settings?.registration_fee ?? 100;
   const regPending = regStatus !== "paid";
-
-  // Payment gate — redirect to payment if not paid
-  const initPayment = useInitPayment();
-  function payNow() {
-    if (!student || !settings) return;
-    initPayment.mutate(
-      {
-        studentId: student.id,
-        email: `${student.username}@smehostels.com`,
-        amountGhs: settings.registration_fee,
-        callbackUrl: `${window.location.origin}/payment-callback`,
-      },
-      { onSuccess: ({ url }) => { window.location.href = url; } },
-    );
-  }
 
   // All icons use primary colour — amber is reserved for warning badges only
   const sections = [
@@ -113,11 +98,98 @@ function StudentHome() {
     );
   }
 
-  // Payment gate disabled — students can access dashboard without paying
-  // To re-enable: uncomment the block below
-  /*
-  if (student && regPending) { ... }
-  */
+  // Admin verification gate — student must be marked as paid by admin
+  if (student && regPending) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-background">
+        <div className="relative overflow-hidden bg-gradient-primary pb-16 pt-8">
+          <img src={building} alt="" className="absolute inset-0 h-full w-full object-cover opacity-10 pointer-events-none" />
+          <div className="relative mx-auto max-w-lg px-4 sm:px-6">
+            <div className="flex items-center justify-between">
+              <img src={logo} alt="SME Hostels" className="h-10 w-auto squircle bg-white p-1.5 object-contain shadow-soft" />
+              <button onClick={signOut} className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-2 text-xs font-medium text-white backdrop-blur-md hover:bg-white/25 transition">
+                <LogOut className="h-3.5 w-3.5" /> Sign out
+              </button>
+            </div>
+            <div className="mt-8 text-white">
+              <h1 className="text-2xl font-bold">Account pending verification</h1>
+              <p className="mt-1 text-sm opacity-80">Management is reviewing your registration.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-lg px-4 sm:px-6 -mt-8 relative z-10 pb-10">
+          <div className="rounded-2xl bg-white shadow-glass p-6 space-y-5">
+            {/* Student info */}
+            <div className="flex items-center gap-4 rounded-xl bg-muted/40 p-4">
+              <div className="h-14 w-14 overflow-hidden rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                {(student as any).avatar_url
+                  ? <img src={(student as any).avatar_url} alt="" className="h-full w-full object-cover" />
+                  : <span className="text-lg font-bold text-primary">{initials(student.full_name)}</span>}
+              </div>
+              <div>
+                <div className="font-semibold">{student.full_name}</div>
+                <div className="text-xs text-muted-foreground">{student.id} · Room {student.room_no ?? "—"}</div>
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-sm font-semibold text-amber-800">Awaiting payment verification</span>
+              </div>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                Your account has been created. Management needs to confirm your registration fee payment of{" "}
+                <strong>GHS {regFee.toLocaleString()}</strong> before you can access the portal.
+                Please pay to management directly and ask them to verify your account.
+              </p>
+            </div>
+
+            {/* Steps */}
+            <div className="space-y-2">
+              <div className="text-sm font-semibold">What to do:</div>
+              {[
+                `Pay GHS ${regFee.toLocaleString()} registration fee to management (cash, bank or MoMo)`,
+                `Use your Student ID as reference: ${student.id}`,
+                "Management will verify your payment and activate your account",
+                "Come back here and sign in once activated",
+              ].map((step, i) => (
+                <div key={i} className="flex items-start gap-3 rounded-xl bg-muted/30 p-3">
+                  <div className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary text-[10px] font-bold text-white mt-0.5">{i + 1}</div>
+                  <span className="text-xs text-foreground leading-relaxed">{step}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Payment details */}
+            {settings && (settings.bank_name || settings.momo_number) && (
+              <div className="rounded-xl border border-border p-4 space-y-2 text-xs">
+                <div className="font-semibold text-sm">Payment details</div>
+                {settings.bank_name && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Bank</span>
+                    <span className="font-medium text-right">{settings.bank_name} · {settings.account_number}</span>
+                  </div>
+                )}
+                {settings.momo_number && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">MoMo</span>
+                    <span className="font-medium">{settings.momo_number} ({settings.momo_name})</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button onClick={() => window.location.reload()}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-white py-3 text-sm font-medium hover:bg-muted/40 transition">
+              Check verification status
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
