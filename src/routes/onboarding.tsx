@@ -3,11 +3,11 @@ import { useState, useMemo, useRef } from "react";
 import {
   User, Phone, MessageCircle, BookOpen, Layers, DoorOpen, ShieldCheck,
   AtSign, Lock, ArrowRight, ArrowLeft, CheckCircle2, FileText, Sparkles,
-  Zap, CreditCard, Loader2, Camera, Upload, X,
+  Zap, CreditCard, Loader2, Camera, Upload, X, Eye, EyeOff,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import building from "@/assets/building.jpg";
-import { useRegisterStudent, useRooms, useMeters, useSettings, useHostelFeeForRoom, useInitPayment } from "@/lib/queries";
+import { useRegisterStudent, useRooms, useMeters, useSettings, useHostelFeeForRoom, useInitPayment, usePolicies } from "@/lib/queries";
 import { uploadToImgur } from "@/lib/imgur";
 import { ALL_COURSES, LEVELS } from "@/lib/constants";
 
@@ -49,6 +49,7 @@ function Onboarding() {
   const { data: rooms = [], isLoading: roomsLoading, error: roomsError } = useRooms();
   const { data: meters = [] } = useMeters();
   const { data: settings } = useSettings();
+  const { data: policies = [] } = usePolicies();
   const { data: roomFeeData } = useHostelFeeForRoom(form.roomNo);
   const createStudent = useRegisterStudent();
   // hostelFee shown on step 3 notice
@@ -314,7 +315,7 @@ function Onboarding() {
               </div>
 
               <div className="max-h-80 space-y-3 overflow-y-auto rounded-2xl border border-border bg-white/70 p-5 text-sm leading-relaxed text-foreground">
-                {GUIDELINES.map((g, i) => (
+                {(policies.length > 0 ? policies : GUIDELINES).map((g: any, i: number) => (
                   <div key={i} className="flex gap-3">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <div>
@@ -374,12 +375,21 @@ function Onboarding() {
 /* ── Shared field components ── */
 
 function Field({ icon: Icon, label, ...props }: { icon: typeof User; label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+  const [show, setShow] = useState(false);
+  const isPassword = props.type === "password";
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-medium text-foreground">{label}</span>
       <div className="relative">
         <Icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input {...props} className="w-full rounded-2xl border border-border bg-white/80 py-3 pl-10 pr-4 text-sm outline-none ring-primary/30 focus:ring-2" />
+        <input {...props} type={isPassword ? (show ? "text" : "password") : props.type}
+          className={`w-full rounded-2xl border border-border bg-white/80 py-3 pl-10 text-sm outline-none ring-primary/30 focus:ring-2 ${isPassword ? "pr-10" : "pr-4"}`} />
+        {isPassword && (
+          <button type="button" onClick={() => setShow((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition">
+            {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        )}
       </div>
     </label>
   );

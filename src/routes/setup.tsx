@@ -1,6 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { ShieldCheck, User, Lock, Key, Loader2, CheckCircle2 } from "lucide-react";
+import { useState } from "react";import { ShieldCheck, User, Lock, Key, Loader2, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import { useCreateFirstAdmin, useCheckAdminExists } from "@/lib/queries";
 import logo from "@/assets/logo.jpg";
 
@@ -117,12 +116,21 @@ function Setup() {
 }
 
 function Field({ icon: Icon, label, ...props }: { icon: typeof User; label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+  const [show, setShow] = useState(false);
+  const isPassword = props.type === "password";
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-medium">{label}</span>
       <div className="relative">
         <Icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input {...props} className="w-full rounded-2xl border border-border bg-white px-3 py-3 pl-10 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+        <input {...props} type={isPassword ? (show ? "text" : "password") : props.type}
+          className={`w-full rounded-2xl border border-border bg-white px-3 py-3 pl-10 text-sm outline-none focus:ring-2 focus:ring-primary/30 ${isPassword ? "pr-10" : ""}`} />
+        {isPassword && (
+          <button type="button" onClick={() => setShow((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition">
+            {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        )}
       </div>
     </label>
   );

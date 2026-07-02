@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   Lock, User, ShieldCheck, GraduationCap, Phone,
-  Sparkles, CheckCircle2, ArrowRight, Loader2, AlertCircle,
+  Sparkles, CheckCircle2, ArrowRight, Loader2, AlertCircle, Eye, EyeOff,
 } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import building from "@/assets/building.jpg";
@@ -24,6 +24,7 @@ function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // Saved profile from this device
   const [savedProfile, setSavedProfile] = useState<{ id: string; fullName: string; username?: string } | null>(null);
@@ -152,9 +153,13 @@ function Login() {
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                <input type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password" autoComplete="current-password"
-                  className="w-full rounded-2xl border border-border bg-white/80 py-3 pl-10 pr-4 text-sm outline-none ring-primary/30 focus:ring-2" />
+                  className="w-full rounded-2xl border border-border bg-white/80 py-3 pl-10 pr-10 text-sm outline-none ring-primary/30 focus:ring-2" />
+                <button type="button" onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition">
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
 
               {errorMsg && (

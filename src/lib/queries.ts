@@ -526,3 +526,47 @@ export function useReviewReceipt() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+// ── Policies ──────────────────────────────────────────────────────────────────
+
+import { getPolicies, getAllPoliciesAdmin, createPolicy, updatePolicy, deletePolicy } from "./api/policies.functions";
+
+export const QK_POLICIES = {
+  public: ["policies"] as const,
+  admin: ["policies", "admin"] as const,
+};
+
+export function usePolicies() {
+  return useQuery({ queryKey: QK_POLICIES.public, queryFn: () => getPolicies() });
+}
+
+export function useAllPoliciesAdmin() {
+  return useQuery({ queryKey: QK_POLICIES.admin, queryFn: () => getAllPoliciesAdmin() });
+}
+
+export function useCreatePolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof createPolicy>[0]["data"]) => createPolicy({ data }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: QK_POLICIES.public }); qc.invalidateQueries({ queryKey: QK_POLICIES.admin }); toast.success("Policy added"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdatePolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof updatePolicy>[0]["data"]) => updatePolicy({ data }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: QK_POLICIES.public }); qc.invalidateQueries({ queryKey: QK_POLICIES.admin }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useDeletePolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => deletePolicy({ data: { id } }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: QK_POLICIES.public }); qc.invalidateQueries({ queryKey: QK_POLICIES.admin }); toast.success("Policy deleted"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
