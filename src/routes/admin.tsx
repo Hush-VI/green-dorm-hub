@@ -1401,6 +1401,14 @@ function SettingsPage() {
         </div>
       </SectionPanel>
 
+      <SectionPanel title="Emergency Contacts">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <FormField label="Security line (24/7)" value={f.emergency_security ?? ""} onChange={(v) => setF({ ...f, emergency_security: v })} />
+          <FormField label="Medical / First Aid line" value={f.emergency_medical ?? ""} onChange={(v) => setF({ ...f, emergency_medical: v })} />
+          <FormField label="Office hours" value={f.office_hours ?? ""} onChange={(v) => setF({ ...f, office_hours: v })} />
+        </div>
+      </SectionPanel>
+
       <SectionPanel title="SMS">
         <FormField label="Sender ID" value={f.sms_sender_id ?? ""} onChange={(v) => setF({ ...f, sms_sender_id: v })} />
         <div className="mt-2 text-xs text-muted-foreground">API key is stored as an environment variable and cannot be edited here.</div>
