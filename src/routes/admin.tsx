@@ -30,6 +30,7 @@ import {
   useResetStudentPassword,
   useTestSms,
   useAllReceipts, useReviewReceipt,
+  useAllPoliciesAdmin, useCreatePolicy, useUpdatePolicy, useDeletePolicy,
 } from "@/lib/queries";
 
 export const Route = createFileRoute("/admin")({
@@ -40,7 +41,7 @@ export const Route = createFileRoute("/admin")({
 type Nav =
   | "dashboard" | "students" | "rooms" | "meters"
   | "regfees" | "hostelfees" | "checkins"
-  | "store" | "sms" | "reports" | "settings" | "receipts";
+  | "store" | "sms" | "reports" | "settings" | "receipts" | "policies";
 
 const NAV: { key: Nav; label: string; icon: typeof LayoutDashboard }[] = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -54,6 +55,7 @@ const NAV: { key: Nav; label: string; icon: typeof LayoutDashboard }[] = [
   { key: "sms", label: "SMS Center", icon: MessageSquare },
   { key: "reports", label: "Reports", icon: BarChart3 },
   { key: "receipts", label: "Receipts", icon: Receipt },
+  { key: "policies", label: "Policies", icon: FileText },
   { key: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
@@ -117,6 +119,8 @@ function Admin() {
             {page === "store" && <StoreAdminPage />}
             {page === "sms" && <SmsPage />}
             {page === "reports" && <ReportsPage />}
+            {page === "receipts" && <ReceiptsPage />}
+            {page === "policies" && <PoliciesPage />}
             {page === "settings" && <SettingsPage />}
           </div>
         </div>
@@ -1401,6 +1405,112 @@ function SettingsPage() {
         <FormField label="Sender ID" value={f.sms_sender_id ?? ""} onChange={(v) => setF({ ...f, sms_sender_id: v })} />
         <div className="mt-2 text-xs text-muted-foreground">API key is stored as an environment variable and cannot be edited here.</div>
       </SectionPanel>
+    </div>
+  );
+}
+
+/* =========================  POLICIES  ========================= */
+
+function PoliciesPage() {
+  const { data: policies = [] } = useAllPoliciesAdmin();
+  const createMut = useCreatePolicy();
+  const updateMut = useUpdatePolicy();
+  const deleteMut = useDeletePolicy();
+
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [newTitle, setNewTitle] = useState("");
+  const [newBody, setNewBody] = useState("");
+
+  function startAdd() { setNewTitle(""); setNewBody(""); setAdding(true); }
+  function startEdit(p: any) { setNewTitle(p.title); setNewBody(p.body); setEditing(p); }
+
+  function saveNew() {
+    if (!newTitle.trim() || !newBody.trim()) return;
+    createMut.mutate({ title: newTitle, body: newBody }, { onSuccess: () => setAdding(false) });
+  }
+
+  function saveEdit() {
+    if (!editing || !newTitle.trim() || !newBody.trim()) return;
+    updateMut.mutate({ id: editing.id, title: newTitle, body: newBody }, { onSuccess: () => setEditing(null) });
+  }
+
+  return (
+    <div className="space-y-4">
+      <StickyHeader title="Hostel Policies" subtitle={`${policies.length} sections`}
+        actions={
+          <button onClick={startAdd}
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+            <Plus className="h-4 w-4" /> Add policy
+          </button>
+        }
+      />
+
+      {/* Add form */}
+      {adding && (
+        <div className="squircle bg-white p-5 shadow-soft border-2 border-primary/20">
+          <div className="text-sm font-semibold mb-3">New policy section</div>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium">Title</label>
+              <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="e.g. Quiet Hours"
+                className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium">Content</label>
+              <textarea value={newBody} onChange={(e) => setNewBody(e.target.value)} rows={4} placeholder="Policy details…"
+                className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setAdding(false)} className="rounded-full border border-border bg-white px-4 py-2 text-sm">Cancel</button>
+              <button onClick={saveNew} disabled={createMut.isPending || !newTitle.trim() || !newBody.trim()}
+                className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
+                {createMut.isPending ? "Saving…" : "Add"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Policy list */}
+      <div className="space-y-3">
+        {policies.map((p: any, i: number) => (
+          <div key={p.id} className={`squircle bg-white p-5 shadow-soft ${!p.active ? "opacity-50" : ""}`}>
+            {editing?.id === p.id ? (
+              <div className="space-y-3">
+                <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/30" />
+                <textarea value={newBody} onChange={(e) => setNewBody(e.target.value)} rows={5}
+                  className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30" />
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => setEditing(null)} className="rounded-full border border-border bg-white px-3 py-1.5 text-xs">Cancel</button>
+                  <button onClick={saveEdit} disabled={updateMut.isPending}
+                    className="rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50">
+                    {updateMut.isPending ? "Saving…" : "Save"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary mt-0.5">{i + 1}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold">{p.title}</div>
+                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{p.body}</p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => updateMut.mutate({ id: p.id, active: !p.active })}
+                    className={`rounded-full px-2 py-1 text-[10px] font-medium ${p.active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                    {p.active ? "Visible" : "Hidden"}
+                  </button>
+                  <button onClick={() => startEdit(p)} className="grid h-8 w-8 place-items-center rounded-lg bg-muted hover:bg-primary/10"><Edit3 className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => deleteMut.mutate(p.id)} className="grid h-8 w-8 place-items-center rounded-lg bg-muted hover:bg-destructive/10 text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+        {policies.length === 0 && <div className="py-8 text-center text-sm text-muted-foreground">No policies yet. Add one above.</div>}
+      </div>
     </div>
   );
 }
