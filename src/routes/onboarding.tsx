@@ -480,7 +480,7 @@ function WhatsAppStep({ form, resolvedMeter, roomFeeData, hostelFee, settings, s
         onClick={() => {
           if (!joined) return;
           // Paystack payment disabled — go straight to portal
-          navigate({ to: "/student-home" });
+          onEnter();
         }}
         disabled={!joined}
         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-soft transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50">
