@@ -5,7 +5,7 @@ import {
   CheckCircle2, XCircle, ArrowRight, Copy, Check, Plus, Minus, Trash2,
   Zap, History, ChevronRight, Phone, MessageCircle, DoorOpen, BookOpen,
   Edit3, Save, X, ChevronDown, ChevronUp, AlertTriangle, Sparkles,
-  Building2, Receipt, ShieldCheck, Upload, Loader2, Camera,
+  Building2, Receipt, ShieldCheck, Upload, Loader2, Camera, ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.jpg";
@@ -19,6 +19,37 @@ import {
   useElectricityLogs, useLogElectricityTopup,
   useStudentReceipts, useSubmitReceipt,
 } from "@/lib/queries";
+
+// ── ECG PowerApp launcher ─────────────────────────────────────────────────────
+// Opens the ECG PowerApp with the meter number pre-filled where possible.
+// Android: uses an intent:// URL so the OS routes directly into the installed app.
+//   The meter number is passed as a query param; if the app isn't installed the
+//   browser falls back to the Play Store via the intent fallback URL.
+// iOS: opens the App Store listing directly (no published custom URL scheme).
+// Desktop: opens the Play Store web page as a generic fallback.
+function openEcgApp(meterNo: string) {
+  const ua = navigator.userAgent;
+  const isIos = /iphone|ipad|ipod/i.test(ua);
+  const isAndroid = /android/i.test(ua);
+
+  if (isAndroid) {
+    // Android intent URL: tries to open the app; falls back to Play Store
+    const intentUrl =
+      `intent://topup?meter=${encodeURIComponent(meterNo)}` +
+      `#Intent;` +
+      `package=com.ecgmobile;` +
+      `scheme=ecgpowerapp;` +
+      `S.browser_fallback_url=${encodeURIComponent(
+        "https://play.google.com/store/apps/details?id=com.ecgmobile",
+      )};` +
+      `end`;
+    window.location.href = intentUrl;
+  } else if (isIos) {
+    window.open("https://apps.apple.com/app/ecg-powerapp/id1398352884", "_blank");
+  } else {
+    window.open("https://play.google.com/store/apps/details?id=com.ecgmobile", "_blank");
+  }
+}
 
 export const Route = createFileRoute("/portal")({
   head: () => ({ meta: [{ title: "Student Portal — SME Hostels" }] }),
@@ -802,6 +833,83 @@ function MeterTab({ studentId, onBack }: { studentId: string; onBack: () => void
         <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-violet-100 text-violet-700"><Zap className="h-8 w-8" /></div>
         <div className="mt-3 text-xs uppercase tracking-wider text-muted-foreground">Your Meter</div>
         <div className="text-3xl font-bold">{meter.no}</div>
+      </div>
+
+      {/* ── Pay electricity bill via ECG PowerApp ── */}
+      <div className="squircle overflow-hidden shadow-soft">
+        {/* gradient header */}
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/25">
+              <Zap className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-white">Pay Electricity Bill</div>
+              <div className="text-xs text-white/80">Powered by ECG PowerApp</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white px-5 py-4 space-y-3">
+          {/* Meter number display */}
+          <div className="flex items-center justify-between rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold">Your Meter Number</div>
+              <div className="text-xl font-bold text-amber-900 mt-0.5">{meter.no}</div>
+            </div>
+            <button
+              onClick={async () => {
+                await navigator.clipboard.writeText(meter.no);
+                toast.success("Meter number copied");
+              }}
+              className="grid h-9 w-9 place-items-center rounded-xl bg-white border border-amber-200 text-amber-700 hover:bg-amber-100 transition"
+              title="Copy meter number"
+            >
+              <Copy className="h-4 w-4" />
+            </button>
+          </div>
+
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Tap the button below to open the <strong>ECG PowerApp</strong>. Your meter number is shown above — copy it before opening the app so you can paste it into the top-up screen.
+          </p>
+
+          {/* Primary CTA */}
+          <button
+            onClick={() => openEcgApp(meter.no)}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-3.5 text-sm font-semibold text-white shadow-soft hover:opacity-90 active:scale-[.98] transition"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Open ECG PowerApp · {meter.no}
+          </button>
+
+          {/* Fallback links */}
+          <div className="flex items-center justify-center gap-4 pt-0.5">
+            <a
+              href="https://play.google.com/store/apps/details?id=com.ecgmobile"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
+            >
+              Android (Play Store)
+            </a>
+            <span className="text-muted-foreground text-xs">·</span>
+            <a
+              href="https://apps.apple.com/app/ecg-powerapp/id1398352884"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
+            >
+              iOS (App Store)
+            </a>
+            <span className="text-muted-foreground text-xs">·</span>
+            <a
+              href="tel:*226%23"
+              className="text-xs text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
+            >
+              Dial *226#
+            </a>
+          </div>
+        </div>
       </div>
 
       {/* Rooms */}

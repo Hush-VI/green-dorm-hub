@@ -54,6 +54,8 @@ function StudentHome() {
       label: "Student Dashboard",
       description: "Check-in status, room details and activity history",
       to: "/portal" as const,
+      badge: undefined as string | undefined,
+      chip: undefined as string | undefined,
     },
     {
       icon: CreditCard,
@@ -63,30 +65,42 @@ function StudentHome() {
         : "Your registration fee has been settled",
       badge: regPending ? "Pending" : undefined,
       to: "/portal" as const,
+      chip: undefined as string | undefined,
     },
     {
       icon: BookOpen,
       label: "Hostel Policy",
       description: "Full guidelines, rules and code of conduct",
       to: "/policy" as const,
+      badge: undefined as string | undefined,
+      chip: undefined as string | undefined,
     },
     {
       icon: ShoppingBag,
       label: "Hostel Store",
       description: "Order items for delivery — pay on receipt",
       to: "/portal" as const,
+      badge: undefined as string | undefined,
+      chip: undefined as string | undefined,
     },
     {
       icon: Zap,
       label: "Electricity & Meter",
-      description: "View shared meter and log prepaid top-ups",
+      description: student?.meter_no
+        ? `Meter ${student.meter_no} · Pay via ECG PowerApp or log a top-up`
+        : "View shared meter and pay electricity bills",
       to: "/portal" as const,
+      badge: undefined as string | undefined,
+      // "Pay Now" chip appears only when we know the meter number
+      chip: student?.meter_no ? "Pay Now" : undefined,
     },
     {
       icon: Phone,
       label: "Contact & Emergency",
       description: "Management contacts and emergency lines",
       to: "/contact" as const,
+      badge: undefined as string | undefined,
+      chip: undefined as string | undefined,
     },
   ];
 
@@ -283,8 +297,8 @@ function StudentHome() {
           {sections.map((s) => (
             <Link key={s.label} to={s.to}
               className="group relative flex items-start gap-4 rounded-2xl bg-white p-5 shadow-soft ring-1 ring-border/50 transition hover:shadow-glass hover:-translate-y-0.5 active:scale-[.98]">
-              {/* All icons use primary colour — amber is reserved for badges */}
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              {/* Electricity card gets an amber icon background; others use primary */}
+              <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${s.chip ? "bg-amber-100 text-amber-600" : "bg-primary/10 text-primary"}`}>
                 <s.icon className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0 pt-0.5">
@@ -293,6 +307,11 @@ function StudentHome() {
                   {s.badge && (
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
                       {s.badge}
+                    </span>
+                  )}
+                  {s.chip && (
+                    <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                      {s.chip}
                     </span>
                   )}
                 </div>
